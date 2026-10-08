@@ -31,10 +31,10 @@ BOT-6 Setup Postgres + Redis via docker-compose [BOT-6]
 - `feat(api):` — release-please detecta: minor bump em `api`
 - `BOT-6 ... [BOT-6]` no rodapé — vai pro changelog como referência de rastreio
 
-Exemplo de entrada gerada em `api/CHANGELOG.md`:
+Exemplo de entrada gerada em `apps/api/CHANGELOG.md`:
 
 ```markdown
-## [0.2.0](.../api-v0.1.0...api-v0.2.0) (2026-10-15)
+## [0.2.0](.../apps/api-v0.1.0...apps/api-v0.2.0) (2026-10-15)
 
 ### ✨ Features
 * **api:** setup postgres via docker-compose (BOT-6) (abc123)
@@ -57,16 +57,17 @@ Mesmas do resto. Todas as tasks são `[S]` sequenciais — cada uma depende da a
 ## Fase 0 — Setup
 
 - [ ] **BOT-1** [S] — Configuração do release-please:
-  - `release-please-config.json` na raiz — declara os 2 packages (`api` e `web`), release type `node`, cada um com changelog próprio, `bump-minor-pre-major: true`
-  - `.release-please-manifest.json` — versão atual de cada package. Baseline: `{ "api": "0.1.0", "web": "0.1.0" }`
-  - `api/CHANGELOG.md` e `web/CHANGELOG.md` iniciais com header e primeira entrada `0.1.0 — initial baseline`
-  - Ajustar `api/package.json` e `web/package.json` pra `"version": "0.1.0"` (quando existirem — se o bootstrap ainda não rodou, cria stubs mínimos `{ "name": "api", "version": "0.1.0", "private": true }` e `{ "name": "web", "version": "0.1.0", "private": true }` só pro release-please não quebrar)
+  - `release-please-config.json` na raiz — declara os 2 packages (`apps/api` e `apps/web`), release type `node`, cada um com changelog próprio, `bump-minor-pre-major: true`, `separate-pull-requests: false`, com `changelog-sections` (ver `spec.md` §4.2)
+  - `.release-please-manifest.json` — versão atual de cada package. Baseline: `{ "apps/api": "0.1.0", "apps/web": "0.1.0" }`
+  - `apps/api/CHANGELOG.md` e `apps/web/CHANGELOG.md` iniciais com header e primeira entrada `0.1.0 — initial baseline`
+  - Ajustar `apps/api/package.json` e `apps/web/package.json` pra `"version": "0.1.0"` (quando existirem — se o bootstrap ainda não rodou, cria stubs mínimos `{ "name": "api", "version": "0.1.0", "private": true }` e `{ "name": "web", "version": "0.1.0", "private": true }` só pro release-please não quebrar)
+  - `packages/shared` **não** entra no release-please (internal, consumido via workspace link)
 
 - [ ] **BOT-2** [S] — GitHub Actions `.github/workflows/release-please.yml`:
   - Triggers: `push` em `main`, `workflow_dispatch` (manual)
   - Job usa `googleapis/release-please-action@v4`
   - Permissions: `contents: write`, `pull-requests: write`
-  - Comportamento: após merge em `main`, abre/atualiza a Release PR; quando Release PR é mergeada, cria tags `api-v0.X.Y` / `web-v0.X.Y` + GitHub Releases com o CHANGELOG como body
+  - Comportamento: após merge em `main`, abre/atualiza a Release PR; quando Release PR é mergeada, cria tags `apps/api-v0.X.Y` / `apps/web-v0.X.Y` + GitHub Releases com o CHANGELOG como body
 
 - [ ] **BOT-3** [S] — Preview de versão em Pull Requests (nice-to-have mas barato):
   - Workflow separado `.github/workflows/version-preview.yml` que roda em `pull_request` events
@@ -102,7 +103,7 @@ Mesmas do resto. Todas as tasks são `[S]` sequenciais — cada uma depende da a
 - **Merge de commits legado (pré-BOT-1) polui changelog** — não vai pra changelog porque release-please pega só commits pós-tag. Baseline `0.1.0 initial` cobre esse pedaço
 - **Alguém commita sem seguir formato pelo web UI do GitHub** — commitlint no CI (BOT-4) bloqueia
 - **Release PR fica esquecida aberta** — sem drama, ela se atualiza a cada merge novo. Você merge quando quiser cortar release
-- **Package `api/` ou `web/` ainda não existe quando BOT-1 roda** — stub mínimo de `package.json` com `version: 0.1.0` resolve até o bootstrap chegar
+- **Package `apps/api/` ou `apps/web/` ainda não existe quando BOT-1 roda** — stub mínimo de `package.json` com `version: 0.1.0` resolve até o bootstrap (`002-bootstrap`) chegar
 
 ## Referências
 
