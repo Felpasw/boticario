@@ -9,6 +9,7 @@ Autenticação de usuário via **cookie de sessão HttpOnly** com session store 
 ## 2. Escopo
 
 **Dentro**
+
 - Models Prisma: `User`, `Session`
 - Módulo `apps/api/src/users/` com `users.service.ts` + `UsersRepository` (port + Prisma adapter)
 - Módulo `apps/api/src/auth/` com `auth.controller.ts` + `auth.service.ts` + use-cases + Passport local strategy + argon2 hasher + sessions repository
@@ -28,6 +29,7 @@ Autenticação de usuário via **cookie de sessão HttpOnly** com session store 
   - **web**: smoke render do `LoginForm`; unit do `AuthHooks.use()` com queryClient mock + axios mock
 
 **Fora**
+
 - Register / signup (user vem só via seed)
 - OAuth / Google login
 - Email verification / password reset
@@ -62,6 +64,7 @@ model Session {
 ```
 
 Decisões:
+
 - `Session.id` opaque (64 chars hex) — vai dentro do cookie `boticario_session`
 - `onDelete: Cascade` em `Session.user` — se user for deletado, sessões somem
 - Index em `expiresAt` pro job futuro de limpeza (sweep de sessões expiradas — adiado, não blocker)
@@ -125,11 +128,13 @@ auth/
 ```
 
 ### `apps/api/src/@common/` (adições)
+
 - `infrastructure/pipes/zod-validation.pipe.ts` — pipe genérico que valida body contra schema Zod do `shared`
 
 ## 5. Endpoints
 
 ### `POST /auth/login`
+
 - **Body**: `{ email, password }` (validado via `LoginRequestSchema` do `shared`)
 - **Sucesso (200)**:
   - Cria session row (`id` = randomBytes(32).toString('hex'), `expiresAt` = now + 7d)
@@ -140,6 +145,7 @@ auth/
   - `401 INVALID_CREDENTIALS` — email não existe OU senha errada (mesmo erro pros dois cenários pra evitar user enumeration)
 
 ### `POST /auth/logout`
+
 - **Body**: vazio
 - **Sucesso (204)**:
   - Lê cookie, deleta session row, limpa cookie com `maxAge: 0`
@@ -148,6 +154,7 @@ auth/
   - `401 UNAUTHORIZED` — sem cookie / cookie inválido (idempotente — reset do cookie no cliente vale igual)
 
 ### Rolling session (middleware/guard)
+
 - Em todo request autenticado: se `session.expiresAt - now < 1 day`, bumpa pra `now + 7d` + re-emite cookie
 - Idempotente, sem side-effect visível pro user
 
@@ -164,6 +171,7 @@ auth/
 7. Libera
 
 Decoradores:
+
 - `@Public()` → marca rota como não-autenticada (metadata `IS_PUBLIC_KEY`)
 - `@CurrentUser()` → `createParamDecorator` que extrai `request.user`
 
@@ -264,6 +272,7 @@ export default new AuthHooks();
 ## 9. Variáveis de ambiente novas
 
 ### `apps/api/.env.example`
+
 ```
 SESSION_COOKIE_SECRET=change-me   # usado pra assinar cookie (futuro — por enquanto só opaque id)
 SEED_ADMIN_EMAIL=admin@boticario.local
@@ -286,14 +295,14 @@ SEED_ADMIN_PASSWORD=change-me-dev
 
 ## 11. Riscos e mitigações
 
-| Risco | Mitigação |
-|---|---|
-| User enumeration via timing diferente entre "email não existe" e "senha errada" | Sempre rodar `argon2.verify` com hash dummy quando email não existe (constant-time) |
-| Session fixation (atacante planta cookie antes do login) | `POST /auth/login` sempre gera novo id de sessão, ignora cookie existente |
-| CSRF em POST /auth/logout (que muda estado) | SameSite=Lax no cookie bloqueia cross-site; CORS restrito a `NEXT_PUBLIC_API_URL` reforça |
-| Cookie XSS roubando sessão | `HttpOnly` impede JS de ler; `Secure` em prod impede HTTP; CSP no front como defesa extra |
-| Sessões ficam no DB pra sempre e crescem | Index em `expiresAt` + sweep job no futuro (deferred — não blocker enquanto user único é demo) |
-| Front não consegue bater em `/auth/login` cross-origin em dev | CORS do api lista `http://localhost:3000` + axios com `withCredentials: true` |
+| Risco                                                                           | Mitigação                                                                                      |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| User enumeration via timing diferente entre "email não existe" e "senha errada" | Sempre rodar `argon2.verify` com hash dummy quando email não existe (constant-time)            |
+| Session fixation (atacante planta cookie antes do login)                        | `POST /auth/login` sempre gera novo id de sessão, ignora cookie existente                      |
+| CSRF em POST /auth/logout (que muda estado)                                     | SameSite=Lax no cookie bloqueia cross-site; CORS restrito a `NEXT_PUBLIC_API_URL` reforça      |
+| Cookie XSS roubando sessão                                                      | `HttpOnly` impede JS de ler; `Secure` em prod impede HTTP; CSP no front como defesa extra      |
+| Sessões ficam no DB pra sempre e crescem                                        | Index em `expiresAt` + sweep job no futuro (deferred — não blocker enquanto user único é demo) |
+| Front não consegue bater em `/auth/login` cross-origin em dev                   | CORS do api lista `http://localhost:3000` + axios com `withCredentials: true`                  |
 
 ## 12. Dependências
 

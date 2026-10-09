@@ -12,6 +12,7 @@ Adotar `release-please` (Google) pra automatizar versionamento e publicação de
 ## 2. Escopo
 
 **Dentro**
+
 - Conventional Commits enforcement (local via Husky + CI via workflow).
 - `release-please` config + manifest + workflow.
 - Workflow de preview de versão em PRs.
@@ -19,6 +20,7 @@ Adotar `release-please` (Google) pra automatizar versionamento e publicação de
 - Changelogs iniciais `apps/api/CHANGELOG.md` e `apps/web/CHANGELOG.md`.
 
 **Fora**
+
 - Branch protection rules (configuração manual no GitHub — documentada mas não automatizada aqui).
 - Deploy automatizado (release-please só versiona; deploy vive em outro spec).
 - Publicação em npm registry (projeto é interno).
@@ -39,19 +41,19 @@ Adotar `release-please` (Google) pra automatizar versionamento e publicação de
 
 Scope esperado: `api`, `web`, `shared`, `ci`, `release`, `repo`.
 
-| Type       | SemVer impact      | Changelog section      |
-|------------|--------------------|------------------------|
-| `feat`     | minor              | ✨ Features            |
-| `fix`      | patch              | 🐛 Correções           |
-| `perf`     | patch              | ⚡ Performance         |
-| `refactor` | none               | 🔨 Refactoring         |
-| `revert`   | varia              | ⏪ Reverts             |
-| `docs`     | none (hidden)      | 📝 Docs                |
-| `chore`    | none (hidden)      | 🧹 Chores              |
-| `test`     | none (hidden)      | 🧪 Testes              |
-| `build`    | none (hidden)      | 📦 Build               |
-| `ci`       | none (hidden)      | 🤖 CI                  |
-| `style`    | none (hidden)      | 🎨 Style               |
+| Type       | SemVer impact | Changelog section |
+| ---------- | ------------- | ----------------- |
+| `feat`     | minor         | ✨ Features       |
+| `fix`      | patch         | 🐛 Correções      |
+| `perf`     | patch         | ⚡ Performance    |
+| `refactor` | none          | 🔨 Refactoring    |
+| `revert`   | varia         | ⏪ Reverts        |
+| `docs`     | none (hidden) | 📝 Docs           |
+| `chore`    | none (hidden) | 🧹 Chores         |
+| `test`     | none (hidden) | 🧪 Testes         |
+| `build`    | none (hidden) | 📦 Build          |
+| `ci`       | none (hidden) | 🤖 CI             |
+| `style`    | none (hidden) | 🎨 Style          |
 
 **Breaking changes:** `feat!:` ou `BREAKING CHANGE:` no footer. Enquanto `0.x`, por convenção SemVer, breaking bumpa minor (major só a partir de `1.0.0`). Config `bump-minor-pre-major: true` no release-please garante isso.
 
@@ -191,13 +193,13 @@ A fase está pronta quando **tudo abaixo** é verdade:
 
 ## 9. Riscos e mitigações
 
-| Risco | Mitigação |
-|---|---|
+| Risco                                                       | Mitigação                                                                                                                                                                 |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `apps/api` ou `apps/web` ainda não existe quando BOT-1 roda | Stub mínimo de `package.json` (`{ "name": "api", "version": "0.1.0", "private": true }`) só pra release-please não quebrar; bootstrap preenche o resto em `002-bootstrap` |
-| Commit legado (pré-BOT-1) polui changelog | release-please só pega commits pós-tag. Baseline `0.1.0 initial` cobre tudo que veio antes |
-| Alguém commita sem seguir formato via web UI do GitHub | `commitlint.yml` em CI bloqueia |
-| Release PR fica esquecida aberta | Sem drama — se atualiza a cada merge; merge quando quiser cortar release |
-| Secret do `GITHUB_TOKEN` sem permissão de PR | Workflow usa `permissions: contents: write + pull-requests: write` no job |
+| Commit legado (pré-BOT-1) polui changelog                   | release-please só pega commits pós-tag. Baseline `0.1.0 initial` cobre tudo que veio antes                                                                                |
+| Alguém commita sem seguir formato via web UI do GitHub      | `commitlint.yml` em CI bloqueia                                                                                                                                           |
+| Release PR fica esquecida aberta                            | Sem drama — se atualiza a cada merge; merge quando quiser cortar release                                                                                                  |
+| Secret do `GITHUB_TOKEN` sem permissão de PR                | Workflow usa `permissions: contents: write + pull-requests: write` no job                                                                                                 |
 
 ## 10. Pré-requisitos pra fases seguintes
 

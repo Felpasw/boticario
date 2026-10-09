@@ -10,6 +10,7 @@ Pipeline de GitHub Actions que roda em todo PR e em todo push pra `main`, cobrin
 ## 2. Escopo
 
 **Dentro**
+
 - Workflow `.github/workflows/ci.yml` com jobs paralelos: `install`, `lint`, `typecheck`, `test`, `build`
 - Cache do pnpm store (chave: lock hash)
 - Setup matricial (Node 20 por enquanto; estrutura pronta pra expandir)
@@ -20,6 +21,7 @@ Pipeline de GitHub Actions que roda em todo PR e em todo push pra `main`, cobrin
 - ADR `docs/adr/0001-ci-pipeline.md` documentando a decisão
 
 **Fora**
+
 - Workflows de release (`release-please.yml`, `version-preview.yml`, `commitlint.yml`) — vêm do `001-release-management`, esse spec só **referencia** eles como required checks
 - Deploy automatizado (vira spec próprio quando a infra de deploy for decidida)
 - Coverage report publicado (ex: Codecov) — opcional, decisão em `plan.md`
@@ -52,7 +54,15 @@ jobs:
   typecheck:
     name: typecheck
     runs-on: ubuntu-latest
-    steps: [checkout, setup pnpm, setup node 20, install (cached), pnpm --filter api prisma generate, pnpm typecheck]
+    steps:
+      [
+        checkout,
+        setup pnpm,
+        setup node 20,
+        install (cached),
+        pnpm --filter api prisma generate,
+        pnpm typecheck,
+      ]
 
   test:
     name: test
@@ -65,7 +75,15 @@ jobs:
         options: --health-cmd pg_isready ...
     env:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-    steps: [checkout, setup pnpm, setup node 20, install (cached), pnpm --filter api prisma migrate deploy, pnpm test]
+    steps:
+      [
+        checkout,
+        setup pnpm,
+        setup node 20,
+        install (cached),
+        pnpm --filter api prisma migrate deploy,
+        pnpm test,
+      ]
 
   build:
     name: build
@@ -116,6 +134,7 @@ Testes e2e do `apps/api` precisam de DB real. Opções:
 - **(B)** Testcontainers no próprio Jest do `apps/api` (sobe container na hora)
 
 Decisão: **(A) pra CI, (B) pra dev local**. Rationale:
+
 - Service container inicializa 1x por job, mais rápido que Testcontainers que sobe por teste
 - Testcontainers continua útil local pra isolamento de teste individual (sem precisar Postgres rodando previamente)
 - O código de teste é agnóstico: lê `DATABASE_URL` do env, não sabe se é container ou service
@@ -135,12 +154,15 @@ Auto-assigna `@Felpasw` como reviewer em todo PR. Enquanto projeto é solo, serv
 
 ```markdown
 ## Resumo
+
 <!-- O que mudou e por quê -->
 
 ## Task
+
 <!-- BOT-N e link pro item em specs/NNN-slug/tasks.md -->
 
 ## Checklist
+
 - [ ] Commits seguem Conventional Commits em inglês
 - [ ] Subject do PR tem o tag `[BOT-N]` no final (vira o subject do squash merge)
 - [ ] Testes adicionados/atualizados (TDD aplicado)
@@ -148,6 +170,7 @@ Auto-assigna `@Felpasw` como reviewer em todo PR. Enquanto projeto é solo, serv
 - [ ] `tasks.md` da fase marcado conforme progresso
 
 ## Como testar
+
 <!-- Passos reproduzíveis -->
 
 ## Screenshots (se UI)
@@ -156,6 +179,7 @@ Auto-assigna `@Felpasw` como reviewer em todo PR. Enquanto projeto é solo, serv
 ## 9. ADR `docs/adr/0001-ci-pipeline.md`
 
 Documenta:
+
 - A decisão de usar GitHub Actions (vs CircleCI/BuildKite)
 - Jobs paralelos com cache compartilhado via pnpm store
 - Service container pra Postgres em CI, Testcontainers em dev
@@ -176,14 +200,14 @@ Documenta:
 
 ## 11. Riscos e mitigações
 
-| Risco | Mitigação |
-|---|---|
-| `prisma generate` precisa rodar antes de `typecheck` que importa `@prisma/client` | Passo explícito `pnpm --filter api prisma generate` antes de `pnpm typecheck` no job |
-| Service container Postgres não tá pronto quando teste tenta conectar | `pg_isready` healthcheck no service + action espera healthy |
-| Cache corrupto bloqueia install | Cache tem chave hash do lock — mudança no lock invalida; worst case, dev deleta cache pela UI |
-| Jest/Vitest em paralelo esgotam memória do runner GitHub (ubuntu-latest = 7GB) | Jest com `--max-workers=2`; Vitest com `--pool-options.threads.maxThreads=2`; ajustar se necessário |
-| Testcontainers tenta subir no CI mesmo com service container disponível | Guard por env var: `if (process.env.CI) use service container else use Testcontainers` no helper de teste |
-| CI roda `pnpm -r build` e `apps/web` build falha por falta de env `NEXT_PUBLIC_API_URL` | `.env.ci` no `apps/web` com valor dummy válido só pra build passar |
+| Risco                                                                                   | Mitigação                                                                                                 |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `prisma generate` precisa rodar antes de `typecheck` que importa `@prisma/client`       | Passo explícito `pnpm --filter api prisma generate` antes de `pnpm typecheck` no job                      |
+| Service container Postgres não tá pronto quando teste tenta conectar                    | `pg_isready` healthcheck no service + action espera healthy                                               |
+| Cache corrupto bloqueia install                                                         | Cache tem chave hash do lock — mudança no lock invalida; worst case, dev deleta cache pela UI             |
+| Jest/Vitest em paralelo esgotam memória do runner GitHub (ubuntu-latest = 7GB)          | Jest com `--max-workers=2`; Vitest com `--pool-options.threads.maxThreads=2`; ajustar se necessário       |
+| Testcontainers tenta subir no CI mesmo com service container disponível                 | Guard por env var: `if (process.env.CI) use service container else use Testcontainers` no helper de teste |
+| CI roda `pnpm -r build` e `apps/web` build falha por falta de env `NEXT_PUBLIC_API_URL` | `.env.ci` no `apps/web` com valor dummy válido só pra build passar                                        |
 
 ## 12. Dependências
 

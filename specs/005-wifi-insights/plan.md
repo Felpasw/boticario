@@ -9,6 +9,7 @@ Fechar o produto do desafio: dashboard do dono da loja com KPIs, heatmap, timese
 ## 2. Fluxo esperado end-to-end
 
 ### Dev / avaliador
+
 1. `pnpm --filter api db:seed` cria admin
 2. `pnpm --filter api db:seed:connections` popula ~8 semanas de dados realistas
 3. Login em `/login` → redirect `/dashboard`
@@ -18,6 +19,7 @@ Fechar o produto do desafio: dashboard do dono da loja com KPIs, heatmap, timese
 7. Logout → redirect login
 
 ### Ingest externo (simulação durante demo)
+
 1. Script externo (curl/postman/httpie) faz `POST /connections` com cookie da sessão autenticada
 2. Idempotency-Key previne duplicata se o cliente retentar
 3. Resposta devolve `durationSeconds` calculado
@@ -28,6 +30,7 @@ Fechar o produto do desafio: dashboard do dono da loja com KPIs, heatmap, timese
 ### 3.1 Sem entidade `Store` — mono-loja por desafio — DECIDIDO
 
 Opções:
+
 - Multi-tenant com `storeId` em todas as rotas + seletor na UI
 - `Store` 1:1 com User (owner tem 1 loja implícita, sem UI pra criar/trocar)
 - Sem entidade `Store` — `Device`/`Connection` ancoram direto no `User`
@@ -35,6 +38,7 @@ Opções:
 Decisão: **sem `Store`**. O desafio é literal ("você é dono de uma loja" — singular). A entidade intermediária só adiciona módulo `stores/`, FK extra, resolver de store por request e cascade em cadeia — nada disso agrega valor pra UI do dashboard, que é a mesma com ou sem a entidade. Trade-off: evoluir pra multi-store exige migration + refactor (`userId` → `storeId`, extrair módulo, seletor na UI). Custo estimado ~1 dia pelo escopo contido, aceitável. Documentado como follow-up no README.
 
 Consequências concretas:
+
 - `User` ganha `devices: Device[]` + `connections: Connection[]` como relações inversas
 - `Device.userId` + `@@unique([userId, macHash])` + index `(userId, lastSeenAt)`
 - `Connection.userId` + index `(userId, connectedAt)`
@@ -44,6 +48,7 @@ Consequências concretas:
 ### 3.2 Timezone global via env, não por entidade — DECIDIDO
 
 Sem `Store`, não existe `store.timezone`. Opções:
+
 - Timezone no `User` (futuro: user escolhe)
 - Timezone global via env var
 
@@ -52,10 +57,12 @@ Decisão: **env var `APP_TIMEZONE`** com default `America/Sao_Paulo`, lido por u
 ### 3.3 Date range na URL, não em store — DECIDIDO
 
 Opções:
+
 - Zustand store (padrão money pra alguns dados globais)
 - `useSearchParams` do Next (URL-based)
 
 Decisão: **URL**. Rationale:
+
 - Bookmarkable: "manda o link do dashboard com os últimos 7 dias" funciona
 - Shareable: avaliador consegue reproduzir estado exato copiando URL
 - Reset ao fechar aba (desejável — próximo acesso começa limpo)
@@ -70,6 +77,7 @@ Confirmado na conversa. Função pura `alerts-evaluator.ts` recebe `(summary, pr
 ### 3.5 Charts: Recharts — DECIDIDO
 
 Bate com stack moderno Next + boa DX. Alternativas descartadas:
+
 - `@nivo/*`: lib mais pesada, boa pra heatmap mas pior pra line
 - Chart.js: imperativo demais em React
 - D3 direto: overkill
@@ -85,6 +93,7 @@ Benefício: primeira pintura já vem com dados do SSR, loading só aparece quand
 ### 3.7 Rate limit global — DECIDIDO
 
 `@nestjs/throttler` como `APP_GUARD` adicional (compõe com AuthGuard):
+
 - Default: 100 req/min por IP
 - Override `POST /connections`: 1000/min
 - Override `POST /auth/login`: 10/min (anti-brute-force — adicionado nessa fase, não no `004`)
@@ -92,6 +101,7 @@ Benefício: primeira pintura já vem com dados do SSR, loading só aparece quand
 ### 3.8 Metrics calculation em SQL raw vs ORM — DECIDIDO: SQL raw
 
 Agregações usando `prisma.$queryRaw` com SQL explícito pros benefícios:
+
 - Controle fino de `AT TIME ZONE`
 - Window functions e `percentile_cont` que Prisma não expõe nativamente
 - Previsibilidade de performance
@@ -107,6 +117,7 @@ Testes de repository rodam com Testcontainers (Postgres real), dataset fixado no
 ### 3.10 Variação vs. período anterior — DECIDIDO
 
 Compara contra `[from - (to - from), from]`. Exemplos:
+
 - `from=D-30, to=D` → compara com `[D-60, D-30]` (30d anteriores)
 - `from=D-7, to=D` → compara com `[D-14, D-7]` (7d anteriores)
 
@@ -122,20 +133,20 @@ Mediana é mais robusta a outliers (dispositivos esquecidos conectados overnight
 
 ## 4. Mapeamento de scopes de commit
 
-| Área | Scope |
-|---|---|
-| Prisma schema (Device/Connection) + migrations | `feat(api):` |
-| Módulos connections/, metrics/ | `feat(api):` |
-| `TimezoneConfig` em `@common/config/` | `feat(api):` |
-| Rate limit global via throttler | `feat(api):` |
-| Shared schemas (connections + metrics + alerts) | `feat(shared):` |
-| Seed de connections | `chore(api):` ou `feat(api):` |
-| Swagger config | `feat(api):` ou `docs(api):` |
-| Front — services, hooks, stores novos | `feat(web):` |
-| Front — components (atoms/molecules/organisms/templates) | `feat(web):` |
-| Front — páginas dashboard + connections | `feat(web):` |
-| Playwright E2E | `test(web):` ou `feat(web):` |
-| ADR (se houver — ex: SQL raw vs ORM, mono-loja) | `docs(repo):` |
+| Área                                                     | Scope                         |
+| -------------------------------------------------------- | ----------------------------- |
+| Prisma schema (Device/Connection) + migrations           | `feat(api):`                  |
+| Módulos connections/, metrics/                           | `feat(api):`                  |
+| `TimezoneConfig` em `@common/config/`                    | `feat(api):`                  |
+| Rate limit global via throttler                          | `feat(api):`                  |
+| Shared schemas (connections + metrics + alerts)          | `feat(shared):`               |
+| Seed de connections                                      | `chore(api):` ou `feat(api):` |
+| Swagger config                                           | `feat(api):` ou `docs(api):`  |
+| Front — services, hooks, stores novos                    | `feat(web):`                  |
+| Front — components (atoms/molecules/organisms/templates) | `feat(web):`                  |
+| Front — páginas dashboard + connections                  | `feat(web):`                  |
+| Playwright E2E                                           | `test(web):` ou `feat(web):`  |
+| ADR (se houver — ex: SQL raw vs ORM, mono-loja)          | `docs(repo):`                 |
 
 ## 5. Ordem de execução das tasks
 
@@ -182,10 +193,12 @@ BOT-32 (Prisma: Device+Connection + migration)
 ### 7.0 Split new/recurring e top-recurring com joins mais pesados
 
 As queries novas puxam mais trabalho que as anteriores:
+
 - **Timeseries com split**: precisa join com `device.firstSeenAt` pra classificar cada bucket, custo ~2x da timeseries simples
 - **Top recurring**: `GROUP BY deviceId + ORDER BY visitCount DESC LIMIT N` com `HAVING COUNT(*) >= 2` — ok se index `(userId, connectedAt)` cobrir, mas pode degradar se dataset crescer muito
 
 Mitigação:
+
 - Benchmark no dataset seedado (~8 semanas) — meta < 300ms por rota
 - Se virar gargalo depois, materializar view diária `device_daily_visits` (fora do escopo deste spec)
 - `top-recurring` com `limit` default 10 e max 50 segura o pior caso
@@ -205,6 +218,7 @@ Risco: implementação em CSS Grid pode ficar feia / não acessível. Mitigaçã
 ### 7.4 SSR + HydrationBoundary complexo
 
 Pode ter edge cases com queries parametrizadas pela URL (defaults no server vs params no client). Mitigação:
+
 - Server Component usa defaults (últimos 30d) pro prefetch
 - Client reconcilia via `useQuery` com `queryKey` refletindo URL params
 - Mismatch → segundo fetch no client (penalidade pequena, não quebra)
@@ -224,6 +238,7 @@ Aplicar em prod via `@nestjs/throttler` global com override 10/min. Risco: usuá
 ### 7.8 Débito de refactor pra virar multi-store
 
 Documentado e aceito. Lista de mudanças pra evoluir:
+
 - Migration: `ALTER TABLE device/connection RENAME COLUMN user_id TO store_id` + nova tabela `store`
 - Backfill: criar 1 `Store` por `User` existente, popular FK
 - Extrair módulo `stores/` com `StoresService`

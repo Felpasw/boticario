@@ -52,6 +52,7 @@ Passport local serve como padrão NestJS, mas a lógica de validação (hash che
 ### 3.6 Guard global via `APP_GUARD` — DECIDIDO
 
 Alternativa: guard explícito em cada controller com `@UseGuards(AuthGuard)`. Decisão: **global + whitelist via `@Public()`**. Rationale:
+
 - Default seguro: rota nova nasce protegida sem precisar lembrar
 - `@Public()` em `/health` e `/auth/login` é explícito e visível no diff
 - Padrão idêntico ao `money-assistance`
@@ -61,13 +62,21 @@ Alternativa: guard explícito em cada controller com `@UseGuards(AuthGuard)`. De
 `AllExceptionsFilter` registrado via `APP_FILTER` padroniza erro em todas as rotas. Mapeia erros de domain (`InvalidCredentialsError`, `UserNotFoundError`...) pra statusCode + código de erro específico.
 
 Formato (seção 7 do `spec.md`):
+
 ```json
-{ "statusCode": 401, "error": "INVALID_CREDENTIALS", "message": "...", "timestamp": "...", "path": "..." }
+{
+  "statusCode": 401,
+  "error": "INVALID_CREDENTIALS",
+  "message": "...",
+  "timestamp": "...",
+  "path": "..."
+}
 ```
 
 ### 3.8 Zod schemas no `shared` — DECIDIDO
 
 Request/response schemas de `/auth/login` em `packages/shared/src/schemas/auth.ts`. Consumidos:
+
 - **api**: via `ZodValidationPipe` em `@Body()`
 - **web**: via `zodResolver` do RHF no `LoginForm` + tipos inferidos nos services
 
@@ -76,6 +85,7 @@ Single source of truth → impossível front e back divergirem.
 ### 3.9 Front: shell protegido via Server Component — DECIDIDO
 
 Alternativa: client-side redirect no `useEffect`. Decisão: **Server Component que lê cookie via `next/headers`**. Rationale:
+
 - Sem flash de UI protegida renderizando antes do redirect
 - SSR amigável, melhor SEO (irrelevante aqui mas é side-effect gratuito)
 - Chamada `/me` opcional pra re-hidratar user em caso de store desatualizado
@@ -90,16 +100,16 @@ Alternativa: client-side redirect no `useEffect`. Decisão: **Server Component q
 
 ## 4. Mapeamento de scopes de commit
 
-| Área | Scope |
-|---|---|
-| Prisma schema (User/Session + migrations) | `feat(api):` |
-| Módulos `users/` e `auth/` no backend | `feat(api):` |
-| Guard, filter, decorators em `@common/` | `feat(api):` |
-| Seed de admin | `chore(api):` ou `feat(api):` dependendo do caso |
-| Shared schemas Zod de auth | `feat(shared):` |
-| `userStore`, `authService`, `useAuth` no web | `feat(web):` |
-| Páginas `/login` + layout `(app)` | `feat(web):` |
-| Componentes `LoginForm`, `LogoutButton` | `feat(web):` |
+| Área                                         | Scope                                            |
+| -------------------------------------------- | ------------------------------------------------ |
+| Prisma schema (User/Session + migrations)    | `feat(api):`                                     |
+| Módulos `users/` e `auth/` no backend        | `feat(api):`                                     |
+| Guard, filter, decorators em `@common/`      | `feat(api):`                                     |
+| Seed de admin                                | `chore(api):` ou `feat(api):` dependendo do caso |
+| Shared schemas Zod de auth                   | `feat(shared):`                                  |
+| `userStore`, `authService`, `useAuth` no web | `feat(web):`                                     |
+| Páginas `/login` + layout `(app)`            | `feat(web):`                                     |
+| Componentes `LoginForm`, `LogoutButton`      | `feat(web):`                                     |
 
 ## 5. Ordem de execução das tasks
 

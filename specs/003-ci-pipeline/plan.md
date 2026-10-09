@@ -23,12 +23,14 @@ Garantir que todo commit que entra em `main` passou por lint, typecheck, test e 
 ### 3.1 GitHub Actions como provider — DECIDIDO
 
 Pros:
+
 - Integração nativa com GitHub (status checks, PR comments, branch protection)
 - Grátis pra repos públicos; free tier generoso pra privados
 - Service containers resolvem Postgres sem Testcontainers no CI
 - Ecossistema maduro de actions (`actions/setup-node`, `pnpm/action-setup`, etc.)
 
 Descartados:
+
 - **CircleCI**: config em YAML mais verboso, outra conta pra gerenciar
 - **BuildKite**: hospedar runners próprios é overkill
 - **Self-hosted GitHub runners**: desnecessário no volume do projeto
@@ -36,6 +38,7 @@ Descartados:
 ### 3.2 Jobs paralelos vs sequencial — DECIDIDO: paralelo
 
 Opções:
+
 - **Único job sequencial** (`install → lint → typecheck → test → build`): simples, mas falha de lint faz você esperar o install completar, e falha de teste faz você esperar lint rodar
 - **Jobs paralelos** com cache de install compartilhado: feedback mais rápido do primeiro erro (fail-fast efetivo), tempo total menor
 
@@ -46,6 +49,7 @@ Decisão: **paralelo**. Preço: 4 jobs rodam em paralelo (contam no quota do run
 Alternativa: `pnpm/action-setup@v4` + `actions/setup-node@v4` sem cache. Decisão: usar o cache integrado do setup-node — menos uma action, cache funciona out-of-the-box.
 
 Ordem:
+
 ```yaml
 - uses: pnpm/action-setup@v4
   with: { version: 9 }
@@ -59,6 +63,7 @@ Ordem:
 ### 3.4 `prisma generate` como passo explícito — DECIDIDO
 
 `postinstall` do `apps/api` já roda `prisma generate` automaticamente, mas:
+
 - `--frozen-lockfile` pula postinstall em algumas versões/configs
 - Fail-fast: se generate falhar, melhor falhar no step dele que num typecheck confuso
 
@@ -101,6 +106,7 @@ Todos obrigatórios. Nenhum opcional. Nenhum "advisory".
 ### 3.7 Coverage — DECIDIDO: ADIADO
 
 Opções:
+
 - Publicar coverage no Codecov/Coveralls agora
 - Rodar coverage local no CI mas não publicar
 - Esperar até ter código de domínio pra medir
@@ -114,10 +120,12 @@ Playwright entra junto com o primeiro merge que tem UI real pra testar (`004-aut
 ### 3.9 Branch protection — DECIDIDO: MANUAL
 
 Opções:
+
 - Configurar via GitHub API no CI (requer token admin)
 - Deixar manual via GitHub UI, documentar no ADR
 
 Decisão: **manual**. Rationale:
+
 - Configuração acontece 1x e dura. Automatizar algo que roda 1x é desperdício de complexidade
 - Token admin em CI = risco de segurança sem contrapartida
 - ADR serve de documentação pro próximo dev (ou pra você em 6 meses)
@@ -126,12 +134,12 @@ Decisão: **manual**. Rationale:
 
 CI chama scripts que `002-bootstrap` definiu:
 
-| Job CI | Script root chamado | O que roda por package |
-|---|---|---|
-| `lint` | `pnpm lint` | `eslint . --max-warnings=0` em cada package |
-| `typecheck` | `pnpm typecheck` | `tsc --noEmit` em cada package |
-| `test` | `pnpm test` | `jest` em apps/api; `vitest run` em apps/web e packages/shared |
-| `build` | `pnpm -r build` | `nest build` em api, `next build` em web, `tsc` em shared (ordem topológica garantida pelo pnpm) |
+| Job CI      | Script root chamado | O que roda por package                                                                           |
+| ----------- | ------------------- | ------------------------------------------------------------------------------------------------ |
+| `lint`      | `pnpm lint`         | `eslint . --max-warnings=0` em cada package                                                      |
+| `typecheck` | `pnpm typecheck`    | `tsc --noEmit` em cada package                                                                   |
+| `test`      | `pnpm test`         | `jest` em apps/api; `vitest run` em apps/web e packages/shared                                   |
+| `build`     | `pnpm -r build`     | `nest build` em api, `next build` em web, `tsc` em shared (ordem topológica garantida pelo pnpm) |
 
 Scripts têm que existir e estar verdes **antes** desse spec entrar — garantia dada pelo checklist de encerramento do `002-bootstrap`.
 

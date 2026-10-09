@@ -1,6 +1,7 @@
 # Versionamento e changelog automático (BOT-1 … BOT-5) — 🔴 **PRIORIDADE ZERO**
 
 > **PRIORIDADE MÁXIMA no backlog.** Fazer **antes** do bootstrap (BOT-6+). Motivos:
+>
 > - Todo commit daqui pra frente entra no changelog automático se essa infra existir
 > - Se implementar depois, todo histórico anterior fica em "0.1.0 initial" — perde granularidade
 > - Custa 1 dia de dev, dá tracking limpo pra sempre
@@ -37,11 +38,13 @@ Exemplo de entrada gerada em `apps/api/CHANGELOG.md`:
 ## [0.2.0](.../apps/api-v0.1.0...apps/api-v0.2.0) (2026-10-15)
 
 ### ✨ Features
-* **api:** setup postgres via docker-compose (BOT-6) (abc123)
-* **api:** JWT service + refresh token rotation (BOT-12) (def456)
+
+- **api:** setup postgres via docker-compose (BOT-6) (abc123)
+- **api:** JWT service + refresh token rotation (BOT-12) (def456)
 
 ### 🐛 Correções
-* **api:** fix email dedup case-insensitive (BOT-13) (ghi789)
+
+- **api:** fix email dedup case-insensitive (BOT-13) (ghi789)
 ```
 
 ## Depende de
@@ -56,26 +59,26 @@ Mesmas do resto. Todas as tasks são `[S]` sequenciais — cada uma depende da a
 
 ## Fase 0 — Setup
 
-- [ ] **BOT-1** [S] — Configuração do release-please:
+- [x] **BOT-1** [S] — ✅ commit `d6d62ab` — Configuração do release-please:
   - `release-please-config.json` na raiz — declara os 2 packages (`apps/api` e `apps/web`), release type `node`, cada um com changelog próprio, `bump-minor-pre-major: true`, `separate-pull-requests: false`, com `changelog-sections` (ver `spec.md` §4.2)
   - `.release-please-manifest.json` — versão atual de cada package. Baseline: `{ "apps/api": "0.1.0", "apps/web": "0.1.0" }`
   - `apps/api/CHANGELOG.md` e `apps/web/CHANGELOG.md` iniciais com header e primeira entrada `0.1.0 — initial baseline`
   - Ajustar `apps/api/package.json` e `apps/web/package.json` pra `"version": "0.1.0"` (quando existirem — se o bootstrap ainda não rodou, cria stubs mínimos `{ "name": "api", "version": "0.1.0", "private": true }` e `{ "name": "web", "version": "0.1.0", "private": true }` só pro release-please não quebrar)
   - `packages/shared` **não** entra no release-please (internal, consumido via workspace link)
 
-- [ ] **BOT-2** [S] — GitHub Actions `.github/workflows/release-please.yml`:
+- [x] **BOT-2** [S] — ✅ commit `d6d62ab` — GitHub Actions `.github/workflows/release-please.yml`:
   - Triggers: `push` em `main`, `workflow_dispatch` (manual)
   - Job usa `googleapis/release-please-action@v4`
   - Permissions: `contents: write`, `pull-requests: write`
   - Comportamento: após merge em `main`, abre/atualiza a Release PR; quando Release PR é mergeada, cria tags `apps/api-v0.X.Y` / `apps/web-v0.X.Y` + GitHub Releases com o CHANGELOG como body
 
-- [ ] **BOT-3** [S] — Preview de versão em Pull Requests (nice-to-have mas barato):
+- [x] **BOT-3** [S] — ✅ commit `d6d62ab` — Preview de versão em Pull Requests (nice-to-have mas barato):
   - Workflow separado `.github/workflows/version-preview.yml` que roda em `pull_request` events
   - Usa `release-please-action` em modo preview (`skip-github-release: true`, `skip-tag: true`) pra calcular versão-alvo
   - Comenta no PR: "esse merge vai bumpar `api` de 0.1.0 → 0.2.0 (feat)"
   - Comentário se atualiza a cada push no branch
 
-- [ ] **BOT-4** [S] — Enforcement — commitlint + husky:
+- [x] **BOT-4** [S] — ✅ commits `031cec0` + `e176e1b` (money-assistance alignment) — Enforcement — commitlint + husky:
   - `pnpm add -D -w @commitlint/cli @commitlint/config-conventional husky lint-staged`
   - `commitlint.config.mjs` com `extends: ['@commitlint/config-conventional']` + regras de header-max-length relaxado pra caber `[BOT-N]` no final
   - `.husky/commit-msg` roda `pnpm commitlint --edit $1`

@@ -7,6 +7,31 @@ Desafio Técnico Desenvolvedor*.pdf
 # Dependencies
 node_modules/
 
+# Build output
+dist/
+build/
+.next/
+.turbo/
+out/
+.vercel/
+*.tsbuildinfo
+
+# Next.js generated types (rewritten on every dev/build)
+apps/web/next-env.d.ts
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Coverage
+coverage/
+
 # OS
 .DS_Store
 Thumbs.db
