@@ -4,8 +4,31 @@ CLAUDE.md
 # Challenge brief (not for the repo)
 Desafio Técnico Desenvolvedor*.pdf
 
+# Working draft (not for the repo)
+pinto[.md
+
 # Dependencies
 node_modules/
+
+# Build output
+dist/
+build/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Coverage
+coverage/
 
 # OS
 .DS_Store

@@ -2,10 +2,15 @@
   "name": "boticario",
   "version": "0.0.0",
   "private": true,
-  "description": "Boticario Wi-Fi Insights — monorepo root (release-please + commitlint only; workspace layout lands in 002-bootstrap)",
+  "description": "Boticario Wi-Fi Insights — monorepo root (pnpm workspace with apps/* and packages/*)",
   "scripts": {
     "prepare": "husky",
-    "commitlint": "commitlint --edit"
+    "commitlint": "commitlint --edit",
+    "dev": "pnpm -r --parallel --filter './apps/*' dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",

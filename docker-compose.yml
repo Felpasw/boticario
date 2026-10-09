@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: boticario-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: boticario
+      POSTGRES_PASSWORD: boticario
+      POSTGRES_DB: boticario
+    ports:
+      - '5432:5432'
+    volumes:
+      - boticario_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U boticario -d boticario']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  boticario_postgres_data:
