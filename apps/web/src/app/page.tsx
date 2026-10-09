@@ -1,10 +1,24 @@
-export default function Home() {
+'use client';
+
+import { useRouter } from 'next/navigation';
+
+import { AuthTemplate } from '@/components/templates/AuthTemplate';
+import { HeroShutterText } from '@/components/ui/heroShutterText';
+import { MotionButton } from '@/components/ui/motionButton';
+
+const SUBTITLE = 'Wi-Fi Insights · Loja Boticário';
+const FOOTER = 'Boticario — guest Wi-Fi visibility panel';
+const CTA_LABEL = 'Começar';
+const LOGIN_PATH = '/login';
+
+export default function LandingPage() {
+  const router = useRouter();
+
   return (
-    <main className="flex flex-1 items-center justify-center p-10 text-center">
-      <div className="max-w-md space-y-4">
-        <h1 className="text-3xl font-semibold tracking-tight">Boticario Wi-Fi Insights</h1>
-        <p className="text-sm text-zinc-600">Bootstrap OK. Dashboard arrives on spec 005.</p>
+    <AuthTemplate subtitle={SUBTITLE} footer={FOOTER} heading={<HeroShutterText />}>
+      <div className="flex justify-center">
+        <MotionButton type="button" label={CTA_LABEL} onClick={() => router.push(LOGIN_PATH)} />
       </div>
-    </main>
+    </AuthTemplate>
   );
 }

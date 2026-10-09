@@ -5,8 +5,10 @@ import { Controller, type Control, type FieldValues, type Path } from 'react-hoo
 
 import { AnimatedInput } from '@/components/atoms/AnimatedInput';
 
-interface ControlledInputProps<T extends FieldValues>
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'name' | 'value' | 'onChange'> {
+interface ControlledInputProps<T extends FieldValues> extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'name' | 'value' | 'onChange'
+> {
   name: Path<T>;
   control: Control<T>;
   label: string;
