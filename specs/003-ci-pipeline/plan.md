@@ -130,7 +130,7 @@ CI chama scripts que `002-bootstrap` definiu:
 |---|---|---|
 | `lint` | `pnpm lint` | `eslint . --max-warnings=0` em cada package |
 | `typecheck` | `pnpm typecheck` | `tsc --noEmit` em cada package |
-| `test` | `pnpm test` | `jest` em apps/api + apps/web + packages/shared |
+| `test` | `pnpm test` | `jest` em apps/api; `vitest run` em apps/web e packages/shared |
 | `build` | `pnpm -r build` | `nest build` em api, `next build` em web, `tsc` em shared (ordem topológica garantida pelo pnpm) |
 
 Scripts têm que existir e estar verdes **antes** desse spec entrar — garantia dada pelo checklist de encerramento do `002-bootstrap`.

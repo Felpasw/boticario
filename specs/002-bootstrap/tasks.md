@@ -7,7 +7,9 @@
 ## Decisões (recap do `plan.md`)
 
 - Monorepo pnpm, Node 20, TypeScript strict em tudo
-- `apps/api` (NestJS + Prisma + Jest), `apps/web` (Next.js App Router + TanStack Query + Tailwind + Jest + RTL), `packages/shared` (tsc build, consumido via `workspace:*`)
+- `apps/api` (NestJS + Prisma + Jest) com estrutura **igual ao `money-assistance`**: módulos de domínio direto em `src/<module>/`, `src/@common/`, `src/infrastructure/prisma/`, `src/config/`
+- `apps/web` (Next.js App Router + TanStack + Vitest + RTL + Tailwind + **shadcn/ui**) com estrutura **igual ao `money-assistance`**: `src/api.ts` (axios), `src/lib/queryClient.ts`, `src/services/` (classes com interface), `src/hooks/` (classes agrupando TanStack), `src/stores/` (Zustand com persist), `src/components/{atoms,molecules,organisms,templates,ui}`
+- `packages/shared` (tsc build + Vitest, consumido via `workspace:*`)
 - `docker-compose.yml` só com Postgres 16 (zero Redis)
 - ESLint flat config na raiz com overrides por package
 - Nenhum código de domínio — só `GET /health` como smoke test
@@ -39,21 +41,20 @@
 
 ## Fase 1 — Apps skeleton
 
-- [ ] **BOT-8** [S] — `apps/api` NestJS skeleton:
+- [ ] **BOT-8** [S] — `apps/api` NestJS skeleton (estrutura igual ao `money-assistance`):
   - `nest new apps/api --skip-git --package-manager pnpm --strict`
-  - Reorganiza `src/` em `modules/`, `common/`, `infra/`
-  - `main.ts` com `app.enableCors({ origin: process.env.CORS_ORIGIN })`, `app.listen(process.env.PORT ?? 3333)`
+  - Reorganiza `src/` em: módulos direto na raiz (ex: `src/health/`), `src/@common/` (com `domain/{constants,ports}` + `infrastructure/{pipes,logging}`), `src/infrastructure/prisma/`, `src/config/`
+  - `main.ts` com `app.enableCors({ origin: process.env.CORS_ORIGIN, credentials: true })`, `app.listen(process.env.PORT ?? 3333)`, logger pino raiz
   - `prisma/schema.prisma` com `datasource db` apontando pra `env("DATABASE_URL")` e `generator client` default
   - Migration inicial vazia: `pnpm --filter api prisma migrate dev --name init --create-only` → aplica
   - `postinstall` do `apps/api/package.json` roda `prisma generate`
-  - Módulo `health`:
+  - Módulo `health` (em `src/health/`):
     - `health.controller.ts` → `GET /health` retorna `{ status, db, timestamp }`
     - `health.service.ts` → faz `prisma.$queryRaw\`SELECT 1\`` e devolve `db: 'ok' | 'error'`
     - `health.module.ts` → import no `app.module.ts`
-  - `infra/prisma/prisma.module.ts` + `prisma.service.ts` (extends `PrismaClient` com `onModuleInit` conectando)
+  - `infrastructure/prisma/prisma.module.ts` + `prisma.service.ts` (extends `PrismaClient` com `onModuleInit` conectando; module `@Global()`)
   - `.env.example` com `DATABASE_URL`, `PORT=3333`, `CORS_ORIGIN=http://localhost:3000`, `NODE_ENV=development`
   - `test/health.e2e-spec.ts` — e2e com supertest batendo em `/health` e esperando `200` + `db: 'ok'`
-  - Pino configurado como logger raiz do Nest
   - Validação: `pnpm --filter api dev` sobe em `:3333`; `curl :3333/health` → `200` com `db: 'ok'`; `pnpm --filter api test:e2e` passa
 
 - [ ] **BOT-10** [S] — `packages/shared` smoke export:
@@ -65,17 +66,28 @@
   - `apps/api/src/modules/health/health.controller.ts` valida resposta contra `HealthResponseSchema` (prova consumo cross-package)
   - Validação: `pnpm -r build` builda shared antes de api; `pnpm --filter api test:e2e` ainda passa
 
-- [ ] **BOT-9** [S] — `apps/web` Next.js skeleton:
-  - `pnpm create next-app@latest apps/web --typescript --tailwind --app --src-dir --no-eslint --import-alias "@/*"` (eslint vem do flat config da raiz, não do default do Next)
-  - Remove boilerplate do `src/app/page.tsx`, substitui por placeholder minimal ("Boticario Wi-Fi Insights — bootstrap OK")
+- [ ] **BOT-9** [S] — `apps/web` Next.js skeleton (estrutura igual ao `money-assistance`):
+  - `pnpm create next-app@latest apps/web --typescript --tailwind --app --src-dir --no-eslint --import-alias "@/*"` (eslint vem do flat config da raiz)
+  - Remove boilerplate; substitui `src/app/page.tsx` por placeholder minimal
   - `next.config.ts` com `transpilePackages: ['shared']`
-  - `src/app/providers.tsx` como Client Component wrapper com `QueryClientProvider` do TanStack Query
+  - **Estrutura `src/` igual money**:
+    - `src/api.ts` — `axios.create({ baseURL: API_URL, withCredentials: true, paramsSerializer: { indexes: null } })` + export default
+    - `src/globals.ts` — exporta `API_URL = process.env.NEXT_PUBLIC_API_URL!` + constantes globais do app
+    - `src/lib/queryClient.ts` — `new QueryClient({ defaultOptions })` com retry policy espelhando money (não retry em 4xx exceto 408; staleTime 30s; gcTime 5min; refetchOnWindowFocus false)
+    - `src/lib/utils.ts` — `cn()` do shadcn (clsx + tailwind-merge)
+    - Pastas vazias prontas: `src/services/{,interfaces}/`, `src/hooks/{,interfaces,constants,utils}/`, `src/stores/`, `src/components/{atoms,molecules,organisms,templates,ui}/`, `src/utils/`, `src/@types/`
+  - `src/app/providers.tsx` — Client Component com `<QueryClientProvider client={queryClient}>` importando do `@/lib/queryClient`
   - `src/app/layout.tsx` envolve `children` com `<Providers>`
-  - `src/lib/api-client.ts` — wrapper fetch mínimo que lê `process.env.NEXT_PUBLIC_API_URL`, método `getHealth()` que bate em `${API}/health` e valida com `HealthResponseSchema` do `shared`
+  - Route groups vazios: `src/app/(auth)/` e `src/app/(app)/` prontos pras páginas futuras
+  - **shadcn/ui init**: `pnpm --filter web dlx shadcn@latest init -d` com style default (new-york), base color `neutral`, cssVariables true, components alias `@/components/ui`; cria `components.json` + `src/components/ui/` + atualiza `tailwind.config.ts` e `globals.css`
+  - Dependências: `axios`, `@tanstack/react-query`, `zustand`, `zod`, `clsx`, `tailwind-merge`, `lucide-react`
+  - Dev dependencies: `vitest`, `@vitest/ui`, `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`, `jsdom`
+  - `vitest.config.ts` com `environment: 'jsdom'`, path aliases espelhando `tsconfig.json`
+  - `vitest.setup.ts` com `import '@testing-library/jest-dom/vitest'`
+  - 1 teste smoke em `src/app/page.test.tsx` renderizando a home
   - `package.json` declara `"shared": "workspace:*"` nos `dependencies`
-  - Jest + Testing Library setup (`jest.config.ts`, `jest.setup.ts`), 1 teste smoke renderizando a home
   - `.env.example` com `NEXT_PUBLIC_API_URL=http://localhost:3333`
-  - Validação: `pnpm --filter web dev` sobe em `:3000`; browser renderiza a home sem erro; `pnpm --filter web test` passa
+  - Validação: `pnpm --filter web dev` sobe em `:3000`; browser renderiza a home; `pnpm --filter web test` passa
 
 ---
 

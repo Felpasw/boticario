@@ -12,8 +12,8 @@ Levantar o esqueleto do monorepo com todas as peças de infra que o resto das fa
 **Dentro**
 - `pnpm-workspace.yaml` + root `package.json` + `.nvmrc` + `tsconfig.base.json`
 - `docker-compose.yml` com Postgres 16 (sem Redis)
-- `apps/api/` — NestJS skeleton com módulo `health`, Prisma inicializado (schema + migration de "init"), `.env.example`, Jest configurado, estrutura `src/{modules,common,infra,main.ts}`
-- `apps/web/` — Next.js (App Router) skeleton com página `/` placeholder, `.env.example`, TanStack Query provider raiz, Tailwind init, Jest + Testing Library configurados
+- `apps/api/` — NestJS skeleton com módulo `health`, Prisma inicializado (schema + migration de "init"), `.env.example`, Jest configurado, estrutura **igual ao `money-assistance`**: módulos de domínio direto em `src/<module>/` (não em `src/modules/<module>/`), `src/@common/` pros helpers cross-module (com `domain/` e `infrastructure/` por dentro), `src/infrastructure/prisma/` pro PrismaService global, `src/config/`, `src/main.ts`
+- `apps/web/` — Next.js (App Router) skeleton com página `/` placeholder, `.env.example`, estrutura **igual ao `money-assistance`**: `src/api.ts` (axios com `withCredentials: true`), `src/lib/queryClient.ts` (TanStack Query config com retry policy e stale/gc times), `src/services/` (classes implementando interfaces), `src/hooks/` (classes agrupando TanStack hooks), `src/stores/` (Zustand com persist), `src/components/{atoms,molecules,organisms,templates,ui}` (Atomic Design + shadcn), `src/lib/`, `src/utils/`, `src/@types/`. Tailwind init + **shadcn/ui init** (components.json) + **Vitest** + **Testing Library** + **jsdom** configurados
 - `packages/shared/` — build via `tsc`, `src/index.ts` exportando 1 tipo smoke que `api` e `web` consomem
 - ESLint config na raiz com overrides por package (api/web/shared têm necessidades diferentes)
 - Prettier + `.editorconfig`
@@ -38,17 +38,25 @@ boticario/
         schema.prisma
         migrations/
       src/
-        modules/
-          health/
-            health.controller.ts
-            health.module.ts
-            health.service.ts
-        common/
-        infra/
+        health/
+          health.controller.ts
+          health.module.ts
+          health.service.ts
+        @common/
+          domain/
+            constants/
+            ports/
+          infrastructure/
+            pipes/
+            logging/
+        infrastructure/
           prisma/
             prisma.module.ts
             prisma.service.ts
+        config/
         app.module.ts
+        app.controller.ts
+        app.service.ts
         main.ts
       test/
         health.e2e-spec.ts
@@ -61,14 +69,36 @@ boticario/
     web/
       src/
         app/
+          (auth)/              # route group pra páginas sem shell
+          (app)/               # route group pra páginas com shell autenticado
           layout.tsx
           page.tsx
-          providers.tsx         # TanStack Query provider wrapper
+          providers.tsx        # QueryClientProvider + outros providers
+          globals.css
+        api.ts                 # axios instance (withCredentials: true)
+        globals.ts             # API_URL + constantes globais
         lib/
-          api-client.ts         # fetch wrapper, lê NEXT_PUBLIC_API_URL
+          queryClient.ts       # TanStack Query config
+          utils.ts             # cn() do shadcn
+        services/
+          interfaces/
+        hooks/
+          interfaces/
+          constants/
+          utils/
+        stores/                # Zustand com persist
+        components/
+          atoms/
+          molecules/
+          organisms/
+          templates/
+          ui/                  # shadcn/ui components
+        utils/                 # funções puras (formatters)
+        @types/
+      components.json          # shadcn config
       .env.example
-      jest.config.ts
-      jest.setup.ts
+      vitest.config.ts
+      vitest.setup.ts
       tailwind.config.ts
       postcss.config.mjs
       next.config.ts

@@ -76,7 +76,7 @@ jobs:
 
 **Rationale do `build` depender de `typecheck`:** se tipos quebram, build vai quebrar com erro pior de ler — fail-fast com typecheck é mais rápido e barato.
 
-**Rationale do `lint` e `test` paralelos a `typecheck`:** não dependem de `tsc` ter rodado (eslint tem seu próprio parser; jest usa ts-jest/swc). Rodar em paralelo corta tempo total.
+**Rationale do `lint` e `test` paralelos a `typecheck`:** não dependem de `tsc` ter rodado (eslint tem seu próprio parser; jest/vitest usam seu próprio pipeline TS). Rodar em paralelo corta tempo total.
 
 ### 3.3 Required checks (branch protection manual)
 
@@ -113,7 +113,7 @@ runs-on: ubuntu-latest
 Testes e2e do `apps/api` precisam de DB real. Opções:
 
 - **(A)** Service container do GitHub Actions (parte do runner, isolado por job)
-- **(B)** Testcontainers no próprio Jest (sobe container na hora)
+- **(B)** Testcontainers no próprio Jest do `apps/api` (sobe container na hora)
 
 Decisão: **(A) pra CI, (B) pra dev local**. Rationale:
 - Service container inicializa 1x por job, mais rápido que Testcontainers que sobe por teste
@@ -181,7 +181,7 @@ Documenta:
 | `prisma generate` precisa rodar antes de `typecheck` que importa `@prisma/client` | Passo explícito `pnpm --filter api prisma generate` antes de `pnpm typecheck` no job |
 | Service container Postgres não tá pronto quando teste tenta conectar | `pg_isready` healthcheck no service + action espera healthy |
 | Cache corrupto bloqueia install | Cache tem chave hash do lock — mudança no lock invalida; worst case, dev deleta cache pela UI |
-| Jest em paralelo esgota memória do runner GitHub (ubuntu-latest = 7GB) | `--max-workers=2` por default; ajustar se necessário |
+| Jest/Vitest em paralelo esgotam memória do runner GitHub (ubuntu-latest = 7GB) | Jest com `--max-workers=2`; Vitest com `--pool-options.threads.maxThreads=2`; ajustar se necessário |
 | Testcontainers tenta subir no CI mesmo com service container disponível | Guard por env var: `if (process.env.CI) use service container else use Testcontainers` no helper de teste |
 | CI roda `pnpm -r build` e `apps/web` build falha por falta de env `NEXT_PUBLIC_API_URL` | `.env.ci` no `apps/web` com valor dummy válido só pra build passar |
 

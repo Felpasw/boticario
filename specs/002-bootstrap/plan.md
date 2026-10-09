@@ -58,18 +58,14 @@ Preço: 1 passo a mais no desenvolvimento (precisa rodar `pnpm --filter shared b
 
 Alternativa descartada: `.eslintrc.cjs` por package — mais arquivos, config duplicada.
 
-### 4.5 Jest em api, web E shared (não misturar Vitest)
+### 4.5 Jest no api, Vitest no web (padrão `money-assistance`)
 
-Opções:
-- (A) Jest em api + Vitest em web (padrão moderno pra Next)
-- (B) Jest em todos
+Decisão: **Jest no `apps/api`, Vitest no `apps/web` e `packages/shared`**. Rationale:
+- `apps/api`: Jest é default do NestJS, zero fricção com `@nestjs/testing` + `supertest` + Testcontainers
+- `apps/web`: Vitest + Testing Library + jsdom bate com o padrão do `money-assistance` (`web/vitest.config.ts`), hot reload rápido e integração nativa com Vite/Next
+- `packages/shared`: Vitest (compartilha setup com web; schemas Zod se beneficiam do watch rápido)
 
-Decisão: **(B)**. Rationale:
-- 1 runner, 1 mental model, 1 jeito de debugar
-- Testing Library funciona bem em Jest com `jest-environment-jsdom`
-- NestJS já vem com Jest default — não vale a pena divergir
-
-Preço: Vitest é 20% mais rápido no watch. Aceito.
+Preço: 2 runners pra manter. Aceito — comando `pnpm test` em cada package é agnóstico (chama o runner nativo do package).
 
 ### 4.6 Docker Compose só com Postgres
 
