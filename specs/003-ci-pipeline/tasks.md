@@ -24,7 +24,7 @@
 
 ## Fase 0 — Workflow de CI
 
-- [ ] **BOT-15** [S] — `ci.yml` base com `lint` e `typecheck`:
+- [x] **BOT-15** [S] — ✅ commit `232b356` — `ci.yml` base com `lint` e `typecheck`:
   - `.github/workflows/ci.yml`
   - Triggers: `pull_request` em `main`, `push` em `main`
   - Setup shared steps: `actions/checkout@v4`, `pnpm/action-setup@v4` (version 9), `actions/setup-node@v4` (node 20, cache: 'pnpm'), `pnpm install --frozen-lockfile`
@@ -32,13 +32,13 @@
   - Job `typecheck`: `pnpm --filter api prisma generate` → `pnpm typecheck`
   - Validação: PR dummy mexendo no README dispara ambos os jobs; ambos verdes
 
-- [ ] **BOT-16** [S] — Job `test` com Postgres:
+- [x] **BOT-16** [S] — ✅ commit `232b356` — Job `test` com Postgres:
   - Adiciona job `test` ao `ci.yml`
   - `services.postgres`: image `postgres:16-alpine`, user/pass/db `ci/ci/ci`, porta `5432:5432`, healthcheck `pg_isready`
   - Steps: setup shared + `pnpm --filter api prisma generate` + `pnpm --filter api prisma migrate deploy` (com `DATABASE_URL=postgresql://ci:ci@localhost:5432/ci`) + `pnpm test`
   - Validação: PR dummy dispara `test`; `health.e2e-spec.ts` passa contra o service container
 
-- [ ] **BOT-17** [S] — Job `build`:
+- [x] **BOT-17** [S] — ✅ commit `232b356` — Job `build`:
   - Adiciona job `build` ao `ci.yml` com `needs: [typecheck]`
   - Steps: setup shared + `pnpm --filter api prisma generate` + `pnpm -r build`
   - `apps/web` precisa de `NEXT_PUBLIC_API_URL` pra build passar — definir env dummy no job (`NEXT_PUBLIC_API_URL: http://localhost:3333`)
@@ -48,11 +48,11 @@
 
 ## Fase 1 — Convenções de repo
 
-- [ ] **BOT-18** [S] — `.github/CODEOWNERS`:
+- [x] **BOT-18** [S] — ✅ commit `0d6931d` — `.github/CODEOWNERS`:
   - Conteúdo: `* @Felpasw`
   - Validação: próximo PR mostra `@Felpasw` auto-assigned como reviewer
 
-- [ ] **BOT-19** [S] — `.github/pull_request_template.md`:
+- [x] **BOT-19** [S] — ✅ commit `0d6931d` — `.github/pull_request_template.md`:
   - Seções: Resumo, Task (`BOT-N` + link), Checklist (CC em inglês, tag `[BOT-N]`, testes TDD, lint/typecheck/test/build local verde, `tasks.md` atualizado), Como testar, Screenshots (opcional)
   - Validação: próximo PR nasce com o template preenchido pelo GitHub
 
@@ -60,7 +60,7 @@
 
 ## Fase 2 — Documentação e lock
 
-- [ ] **BOT-20** [S] — ADR `docs/adr/0001-ci-pipeline.md`:
+- [x] **BOT-20** [S] — ✅ commit `478a0cd` — ADR `docs/adr/0001-ci-pipeline.md`:
   - Formato padrão: Context / Decision / Alternatives considered / Consequences
   - Documenta: escolha de GitHub Actions, jobs paralelos, service container vs Testcontainers, required checks pra branch protection, decisão de manter branch protection manual
   - Lista alternativas descartadas: CircleCI, job sequencial único, API pra branch protection, publicar coverage agora
