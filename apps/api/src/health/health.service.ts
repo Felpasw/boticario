@@ -1,14 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { DatabaseStatus, HealthResponse } from 'shared';
 
 import { PrismaService } from '../infrastructure/prisma/prisma.service.js';
-
-export type DatabaseStatus = 'ok' | 'error';
-
-export interface HealthReport {
-  status: 'ok';
-  db: DatabaseStatus;
-  timestamp: string;
-}
 
 @Injectable()
 export class HealthService {
@@ -16,7 +9,7 @@ export class HealthService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async check(): Promise<HealthReport> {
+  async check(): Promise<HealthResponse> {
     const db = await this.pingDatabase();
     return {
       status: 'ok',
