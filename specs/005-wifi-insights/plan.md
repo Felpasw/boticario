@@ -141,25 +141,25 @@ Mediana é mais robusta a outliers (dispositivos esquecidos conectados overnight
 
 ```
 BOT-32 (Prisma: Device+Connection + migration)
-  └─ BOT-33 (shared: schemas Zod de connection + metrics)
+  └─ BOT-33 (shared: schemas Zod de connection + metrics — inclui dwell-distribution, top-recurring e split new/recurring da timeseries)
        └─ BOT-34 (api: devices repo + mac-hasher + idempotency-key-builder)
             └─ BOT-35 (api: register-connection use-case + POST /connections + rate limit override)
                  └─ BOT-36 (api: list-connections use-case + GET /connections paginated)
                       └─ BOT-37 (api: metrics-calculator + alerts-evaluator + period-resolver + TimezoneConfig — funções puras + config)
-                           └─ BOT-38 (api: prisma-metrics.repository com SQL raw agregado)
-                                └─ BOT-39 (api: get-summary + get-heatmap + get-timeseries use-cases + GET /metrics/* endpoints)
+                           └─ BOT-38 (api: prisma-metrics.repository com SQL raw agregado — 5 métodos: summary, heatmap, timeseries com split, dwell-distribution, top-recurring)
+                                └─ BOT-39 (api: 5 use-cases + GET /metrics/{summary,heatmap,timeseries,dwell-distribution,top-recurring})
                                      └─ BOT-40 (api: @nestjs/throttler global + override no login + swagger config)
                                           └─ BOT-41 (api: seed de connections realistas 8 semanas)
-                                               └─ BOT-42 (web: connectionsService + metricsService + useConnections + useMetrics* + useDateRange hooks)
-                                                    └─ BOT-43 (web: atoms + molecules [KpiCard, AlertBanner, DateRangePicker, PaginationControls])
-                                                         └─ BOT-44 (web: organisms [SummarySection, HeatmapChart, TimeseriesChart, ConnectionsTable])
-                                                              └─ BOT-45 (web: dashboard page com SSR prefetch + HydrationBoundary)
+                                               └─ BOT-42 (web: connectionsService + metricsService + hooks — inclui useMetricsDwellDistribution + useMetricsTopRecurring + useDateRange)
+                                                    └─ BOT-43 (web: atoms + molecules [KpiCard, AlertBanner, DateRangePicker, PaginationControls, DwellBucketBar, RecurringDeviceRow])
+                                                         └─ BOT-44 (web: organisms [SummarySection, HeatmapChart, TimeseriesChart com 2 linhas, DwellDistributionChart, TopRecurringList, ConnectionsTable])
+                                                              └─ BOT-45 (web: dashboard page com SSR prefetch — 5 queries prefetched + layout acomodando dwell + top recurring)
                                                                    └─ BOT-46 (web: connections page com paginação + filtro)
-                                                                        └─ BOT-47 (web: Playwright E2E dashboard + connections)
+                                                                        └─ BOT-47 (web: Playwright E2E dashboard + connections — assert nos 5 widgets)
                                                                              └─ BOT-48 (ci: job e2e no workflow do 003)
 ```
 
-17 tasks (BOT-32..BOT-48). Toda `[S]` — camadas se empilham.
+17 tasks (BOT-32..BOT-48). Toda `[S]` — camadas se empilham. Dwell distribution + top recurring + split new/recurring entram expandindo as tasks de metrics (back + front) ao invés de virarem tasks dedicadas — mantém granularidade coerente de camada.
 
 ## 6. Bundles de commit sugeridos
 
@@ -178,6 +178,17 @@ BOT-32 (Prisma: Device+Connection + migration)
 11 bundles / 11 PRs. Granularidade boa pra review incremental.
 
 ## 7. Riscos arquiteturais
+
+### 7.0 Split new/recurring e top-recurring com joins mais pesados
+
+As queries novas puxam mais trabalho que as anteriores:
+- **Timeseries com split**: precisa join com `device.firstSeenAt` pra classificar cada bucket, custo ~2x da timeseries simples
+- **Top recurring**: `GROUP BY deviceId + ORDER BY visitCount DESC LIMIT N` com `HAVING COUNT(*) >= 2` — ok se index `(userId, connectedAt)` cobrir, mas pode degradar se dataset crescer muito
+
+Mitigação:
+- Benchmark no dataset seedado (~8 semanas) — meta < 300ms por rota
+- Se virar gargalo depois, materializar view diária `device_daily_visits` (fora do escopo deste spec)
+- `top-recurring` com `limit` default 10 e max 50 segura o pior caso
 
 ### 7.1 Timezone bug nas agregações
 

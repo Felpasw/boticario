@@ -18,7 +18,9 @@ Domínio do produto: ingestão de conexões de Wi-Fi de visitantes, listagem cru
 - Módulo `apps/api/src/metrics/`:
   - `GET /metrics/summary?from=&to=` — KPIs (visitas, únicos, recorrentes %, dwell médio+mediano) + variação vs. período anterior + `alerts: Alert[]` inline
   - `GET /metrics/heatmap?from=&to=` — matriz dia-da-semana × hora
-  - `GET /metrics/timeseries?from=&to=&granularity=day|week` — série temporal de visitas
+  - `GET /metrics/timeseries?from=&to=&granularity=day|week` — série temporal de visitas, separando novos vs. recorrentes por bucket
+  - `GET /metrics/dwell-distribution?from=&to=` — histograma de dwell em 5 faixas (0-5min, 5-15min, 15-30min, 30-60min, 60+)
+  - `GET /metrics/top-recurring?from=&to=&limit=` — top dispositivos recorrentes do período (deviceId anônimo + nº visitas + última vez + dwell médio)
 - Timezone global via env var `APP_TIMEZONE=America/Sao_Paulo` (lido num helper `TimezoneConfig` injetável — single source nos SQLs `AT TIME ZONE`)
 - Query params padronizados em todas as rotas de leitura:
   - `from`, `to` (ISO 8601, opcionais, default: últimos 30 dias, `to >= from`, janela máxima 365d)
@@ -26,12 +28,12 @@ Domínio do produto: ingestão de conexões de Wi-Fi de visitantes, listagem cru
 - Seed de connections realistas (`pnpm --filter api db:seed:connections`): ~8 semanas de dados pro admin seedado em `004`, com padrões realistas (picos almoço/fim-tarde, sábado +, domingo -, ~35% recorrentes, dwell 5–40 min)
 - Front:
   - `src/services/connections.service.ts` + `metrics.service.ts` (classes com interface)
-  - `src/hooks/useConnections.ts` + `useMetricsSummary.ts` + `useMetricsHeatmap.ts` + `useMetricsTimeseries.ts` + `useDateRange.ts` (padrão `AuthHooks` com `use()`)
+  - `src/hooks/useConnections.ts` + `useMetricsSummary.ts` + `useMetricsHeatmap.ts` + `useMetricsTimeseries.ts` + `useMetricsDwellDistribution.ts` + `useMetricsTopRecurring.ts` + `useDateRange.ts` (padrão `AuthHooks` com `use()`)
   - `src/stores/dateRangeStore.ts` — não; **date range vive na URL** via `useSearchParams` (bookmarkable, shareable)
   - `src/app/(app)/page.tsx` — redireciona pra `/dashboard`
-  - `src/app/(app)/dashboard/page.tsx` — KPIs + heatmap + timeseries + banner de alerts
+  - `src/app/(app)/dashboard/page.tsx` — KPIs + heatmap + timeseries (new vs. recurring) + histograma de dwell + widget "top recorrentes" + banner de alerts
   - `src/app/(app)/connections/page.tsx` — tabela paginada com filtro de período
-  - Componentes atomic: `atoms/{KpiValue,VariationBadge,AlertIcon}`, `molecules/{KpiCard,AlertBanner,DateRangePicker,PeriodShortcuts,PaginationControls}`, `organisms/{SummarySection,HeatmapChart,TimeseriesChart,ConnectionsTable}`, `templates/DashboardTemplate`
+  - Componentes atomic: `atoms/{KpiValue,VariationBadge,AlertIcon,DeviceBadge}`, `molecules/{KpiCard,AlertBanner,DateRangePicker,PeriodShortcuts,PaginationControls,DwellBucketBar,RecurringDeviceRow}`, `organisms/{SummarySection,HeatmapChart,TimeseriesChart,DwellDistributionChart,TopRecurringList,ConnectionsTable}`, `templates/DashboardTemplate`
   - Charts via **Recharts**
 - Playwright E2E: login → dashboard renderiza KPIs → troca período → tabela de connections pagina
 - Swagger UI em `/docs` (NestJS `@nestjs/swagger`)
@@ -230,11 +232,53 @@ Cálculo das métricas em **funções puras** (`metrics-calculator.ts`) — test
   "period": { "from": "...", "to": "..." },
   "granularity": "day",
   "series": [
-    { "bucket": "2026-09-08", "visits": 34, "uniqueVisitors": 22 },
-    { "bucket": "2026-09-09", "visits": 41, "uniqueVisitors": 28 }
+    { "bucket": "2026-09-08", "visits": 34, "uniqueVisitors": 22, "newVisitors": 15, "recurringVisitors": 7 },
+    { "bucket": "2026-09-09", "visits": 41, "uniqueVisitors": 28, "newVisitors": 20, "recurringVisitors": 8 }
   ]
 }
 ```
+
+`newVisitors + recurringVisitors = uniqueVisitors` por bucket. Classificação: um device é "recorrente" no bucket X se `firstSeenAt < inicio(X)` (apareceu antes do bucket).
+
+### `GET /metrics/dwell-distribution?from=&to=`
+```json
+{
+  "period": { "from": "...", "to": "..." },
+  "buckets": [
+    { "label": "0-5min",   "lowerSeconds": 0,    "upperSeconds": 300,  "count": 123 },
+    { "label": "5-15min",  "lowerSeconds": 300,  "upperSeconds": 900,  "count": 456 },
+    { "label": "15-30min", "lowerSeconds": 900,  "upperSeconds": 1800, "count": 789 },
+    { "label": "30-60min", "lowerSeconds": 1800, "upperSeconds": 3600, "count": 234 },
+    { "label": "60+min",   "lowerSeconds": 3600, "upperSeconds": null, "count": 45 }
+  ],
+  "totalWithDwell": 1647
+}
+```
+
+Só considera connections com `disconnectedAt` presente (dwell conhecido). Outliers > 8h filtrados como no summary. Front renderiza como barras horizontais pra leitura rápida.
+
+### `GET /metrics/top-recurring?from=&to=&limit=`
+**Query**:
+- `from`, `to` — opcionais, default últimos 30d
+- `limit` — opcional, default 10, max 50
+
+**Sucesso (200)**:
+```json
+{
+  "period": { "from": "...", "to": "..." },
+  "data": [
+    {
+      "deviceId": "uuid",
+      "visitCount": 12,
+      "firstSeenInPeriodAt": "2026-09-10T18:22:00Z",
+      "lastSeenAt": "2026-10-05T14:03:00Z",
+      "avgDwellSeconds": 1140
+    }
+  ]
+}
+```
+
+Ordenação: `visitCount DESC, lastSeenAt DESC` (desempate pelo mais recente). Só devices com `visitCount >= 2` no período (visita única não é recorrência). `deviceId` é o UUID interno — anônimo por design (MAC nunca persistido).
 
 ## 6. Alerts (gerados inline)
 
@@ -261,8 +305,10 @@ Máximo 3 alerts no response (ordena por severity: warning > info > success, tru
   - Outliers: ignorar `durationSeconds > 8h` (prováveis dispositivos esquecidos conectados overnight)
 - **Variação**: comparação com período `[from - (to-from), from]` (período imediatamente anterior de mesmo tamanho)
 - **Heatmap**: `GROUP BY EXTRACT(DOW FROM connectedAt AT TIME ZONE :tz), EXTRACT(HOUR FROM connectedAt AT TIME ZONE :tz)`
-- **Timeseries day**: `GROUP BY DATE_TRUNC('day', connectedAt AT TIME ZONE :tz)`
-- **Timeseries week**: `GROUP BY DATE_TRUNC('week', connectedAt AT TIME ZONE :tz)`
+- **Timeseries day**: `GROUP BY DATE_TRUNC('day', connectedAt AT TIME ZONE :tz)`; `newVisitors` = DISTINCT macHash onde `device.firstSeenAt >= bucket_start`; `recurringVisitors` = DISTINCT macHash onde `device.firstSeenAt < bucket_start`
+- **Timeseries week**: `GROUP BY DATE_TRUNC('week', connectedAt AT TIME ZONE :tz)` com split análogo
+- **Dwell distribution**: `COUNT(*)` por bucket via `CASE WHEN durationSeconds < 300 THEN '0-5min' ... END`, filtrando `disconnectedAt IS NOT NULL` e `durationSeconds <= 28800`
+- **Top recurring**: `SELECT deviceId, COUNT(*) AS visitCount, MIN(connectedAt) AS firstSeenInPeriodAt, MAX(connectedAt) AS lastSeenAt, AVG(durationSeconds) AS avgDwellSeconds FROM connections WHERE userId=? AND connectedAt BETWEEN from AND to GROUP BY deviceId HAVING COUNT(*) >= 2 ORDER BY visitCount DESC, lastSeenAt DESC LIMIT ?`
 
 `:tz` resolvido pelo `TimezoneConfig.get()` (default `America/Sao_Paulo`, override via env `APP_TIMEZONE`).
 
@@ -361,14 +407,17 @@ Máximo 3 alerts no response (ordena por severity: warning > info > success, tru
 - `POST /connections` autenticado grava com idempotência (reenvio devolve mesmo registro, não duplica)
 - `POST /connections` com `disconnectedAt < connectedAt` devolve `422`
 - `GET /connections?from=...&to=...&page=...` paginated OK, com `totalPages` correto
-- 3 rotas de metrics respondem < 300ms com dataset seedado
+- 5 rotas de metrics respondem < 300ms com dataset seedado
 - `/metrics/summary` devolve `alerts: Alert[]` com até 3 itens ordenados por severity
-- Dashboard renderiza KPIs com variação (seta up/down + %), heatmap preenchido, timeseries com linha, banner com alerts
+- `/metrics/timeseries` separa `newVisitors` + `recurringVisitors` por bucket (soma = `uniqueVisitors`)
+- `/metrics/dwell-distribution` devolve 5 buckets com `count` consistente com total de connections com `disconnectedAt`
+- `/metrics/top-recurring?limit=10` devolve até 10 devices ordenados por `visitCount DESC`, só com `visitCount >= 2`
+- Dashboard renderiza KPIs com variação (seta up/down + %), heatmap preenchido, timeseries com 2 linhas (novo vs. recorrente), histograma de dwell em barras, widget "top recorrentes" com 5-10 linhas, banner com alerts
 - `DateRangePicker` muda `from`/`to` na URL → todas as queries re-fetch
 - `/connections` lista tabela paginada com estados loading/empty/error
 - Logout do `004` limpa queryClient (connections+metrics somem de cache)
 - Playwright E2E dashboard + connections passam no CI
-- Swagger em `/docs` lista 7 rotas (login, logout, me, POST/GET connections, 3 metrics) com DTOs
+- Swagger em `/docs` lista 9 rotas (login, logout, me, POST/GET connections, 5 metrics) com DTOs
 - `pnpm lint` + `pnpm typecheck` + `pnpm test` + `pnpm build` passam
 - CI do `003` continua verde + job novo de e2e
 
