@@ -1,6 +1,7 @@
 # Versionamento e changelog automático (BOT-1 … BOT-5) — 🔴 **PRIORIDADE ZERO**
 
 > **PRIORIDADE MÁXIMA no backlog.** Fazer **antes** do bootstrap (BOT-6+). Motivos:
+>
 > - Todo commit daqui pra frente entra no changelog automático se essa infra existir
 > - Se implementar depois, todo histórico anterior fica em "0.1.0 initial" — perde granularidade
 > - Custa 1 dia de dev, dá tracking limpo pra sempre
@@ -37,11 +38,13 @@ Exemplo de entrada gerada em `apps/api/CHANGELOG.md`:
 ## [0.2.0](.../apps/api-v0.1.0...apps/api-v0.2.0) (2026-10-15)
 
 ### ✨ Features
-* **api:** setup postgres via docker-compose (BOT-6) (abc123)
-* **api:** JWT service + refresh token rotation (BOT-12) (def456)
+
+- **api:** setup postgres via docker-compose (BOT-6) (abc123)
+- **api:** JWT service + refresh token rotation (BOT-12) (def456)
 
 ### 🐛 Correções
-* **api:** fix email dedup case-insensitive (BOT-13) (ghi789)
+
+- **api:** fix email dedup case-insensitive (BOT-13) (ghi789)
 ```
 
 ## Depende de

@@ -6,6 +6,7 @@
 ## 1. Objetivo
 
 Entregar, antes de qualquer linha de código de domínio, um pipeline de versionamento automático que:
+
 - Transforma todo commit convencional em entrada de changelog por package
 - Abre/atualiza uma Release PR a cada merge em `main`
 - Publica tag + GitHub Release ao mergear a Release PR
@@ -31,12 +32,14 @@ Referência direta: `~/Documentos/money-assistance/` — padrão que já roda e 
 ## 3. Ferramenta — **DECIDIDO: `release-please`**
 
 Mesma escolha do `money-assistance`. Pros:
+
 - Suporte nativo pra "PR que se auto-atualiza a cada merge"
 - Monorepo-friendly via `release-please-config.json` com múltiplos packages
 - Compatível com Conventional Commits sem config extra
 - Já battle-tested num projeto irmão — zero risco de refazer errado
 
 Descartados (pro registro):
+
 - `changesets` — exige arquivo de changeset por PR (fricção extra, padrão diferente do que queremos)
 - `semantic-release` — publica direto no push, sem PR intermediária (não bate com a necessidade de Release PR auto-mergeable + revisável)
 
@@ -45,6 +48,7 @@ Descartados (pro registro):
 ### Por que não single-release
 
 Opções consideradas:
+
 - **Single release** (uma versão pro repo todo): simples, mas qualquer fix em `web` bumparia `api` junto — ruim pra ler changelog e pra tag history
 - **Multi-package independente**: `api` e `web` têm versões, tags e changelogs separados — espelha o padrão do `money-assistance`
 
@@ -60,12 +64,12 @@ Decisão: **multi-package**. `packages/shared` é internal e **não** versiona �
 
 Convencionamos:
 
-| Scope do commit | Package afetado | Vira changelog em |
-|---|---|---|
-| `api` | `apps/api` | `apps/api/CHANGELOG.md` |
-| `web` | `apps/web` | `apps/web/CHANGELOG.md` |
-| `shared` | `packages/shared` | **nenhum changelog** (shared é internal). Mas se consumido por api e/ou web, autor deve commitar junto com um `feat(api)` ou `feat(web)` que reflita o impacto |
-| `ci`, `release`, `repo`, `docs` | nenhum (repo-level) | não aparece em changelog publicado (hidden) |
+| Scope do commit                 | Package afetado     | Vira changelog em                                                                                                                                              |
+| ------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api`                           | `apps/api`          | `apps/api/CHANGELOG.md`                                                                                                                                        |
+| `web`                           | `apps/web`          | `apps/web/CHANGELOG.md`                                                                                                                                        |
+| `shared`                        | `packages/shared`   | **nenhum changelog** (shared é internal). Mas se consumido por api e/ou web, autor deve commitar junto com um `feat(api)` ou `feat(web)` que reflita o impacto |
+| `ci`, `release`, `repo`, `docs` | nenhum (repo-level) | não aparece em changelog publicado (hidden)                                                                                                                    |
 
 ## 6. Dependência de `shared` sem versionar
 
@@ -90,6 +94,7 @@ Mitigação: PR template lembra que mudança em `shared` precisa de commit `feat
 ## 9. Branch protection (manual, GitHub UI)
 
 Documentado como pré-requisito, **não automatizado** aqui. Setup esperado após `003`:
+
 - Require PR before merging
 - Require status checks to pass (jobs do `003`: `lint`, `typecheck`, `test`, `build`, `commitlint`)
 - Require branches up to date before merging
@@ -105,13 +110,13 @@ Documentado como pré-requisito, **não automatizado** aqui. Setup esperado apó
 
 ## 11. Riscos e mitigações
 
-| Risco | Mitigação |
-|---|---|
+| Risco                                                 | Mitigação                                                                                                                      |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `apps/api` e `apps/web` não existem quando BOT-1 roda | Criar stubs mínimos de `package.json` (`{ "name": "api", "version": "0.1.0", "private": true }`) só pra release-please parsear |
-| Devs commitando pelo web UI pulam o hook | `commitlint.yml` em CI bloqueia o merge |
-| Release PR fica desatualizada por semanas | Sem drama — ela auto-atualiza. Pode mergear quando quiser |
-| Permissão insuficiente no `GITHUB_TOKEN` | Workflow declara `permissions: contents: write, pull-requests: write` no job |
-| Alguém força push na Release PR | Branch protection na `main` + proibição de force-push resolvem (parte de `003` + manual) |
+| Devs commitando pelo web UI pulam o hook              | `commitlint.yml` em CI bloqueia o merge                                                                                        |
+| Release PR fica desatualizada por semanas             | Sem drama — ela auto-atualiza. Pode mergear quando quiser                                                                      |
+| Permissão insuficiente no `GITHUB_TOKEN`              | Workflow declara `permissions: contents: write, pull-requests: write` no job                                                   |
+| Alguém força push na Release PR                       | Branch protection na `main` + proibição de force-push resolvem (parte de `003` + manual)                                       |
 
 ## 12. Tasks breakdown proposal (vai pro `tasks.md`)
 

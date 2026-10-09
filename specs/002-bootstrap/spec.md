@@ -10,6 +10,7 @@ Levantar o esqueleto do monorepo com todas as peças de infra que o resto das fa
 ## 2. Escopo
 
 **Dentro**
+
 - `pnpm-workspace.yaml` + root `package.json` + `.nvmrc` + `tsconfig.base.json`
 - `docker-compose.yml` com Postgres 16 (sem Redis)
 - `apps/api/` — NestJS skeleton com módulo `health`, Prisma inicializado (schema + migration de "init"), `.env.example`, Jest configurado, estrutura **igual ao `money-assistance`**: módulos de domínio direto em `src/<module>/` (não em `src/modules/<module>/`), `src/@common/` pros helpers cross-module (com `domain/` e `infrastructure/` por dentro), `src/infrastructure/prisma/` pro PrismaService global, `src/config/`, `src/main.ts`
@@ -22,6 +23,7 @@ Levantar o esqueleto do monorepo com todas as peças de infra que o resto das fa
 - README **quick-start** validado end-to-end (`pnpm install` → `docker compose up -d` → `pnpm --filter api db:migrate` → `pnpm dev` → `GET /health` responde)
 
 **Fora**
+
 - Nenhum endpoint de domínio (`stores`, `connections`, `analytics`, `notifications`, `auth`) — tudo vai pra `004-auth` e `005-wifi-insights`
 - CI/CD (pipelines de GitHub Actions pros testes vivem em `003-ci-pipeline`; só os workflows de release vêm do `001`)
 - Deploy pra Vercel/Fly/Railway
@@ -163,6 +165,7 @@ Alternativa considerada: ts-paths com import direto do source (sem build). Decis
 ### 4.6 ESLint — flat config na raiz
 
 Um `eslint.config.mjs` na raiz com overrides por `files` glob:
+
 - `apps/api/**` → regras NestJS (prefere `@typescript-eslint/*`)
 - `apps/web/**` → `eslint-config-next` + regras React
 - `packages/shared/**` → só TS base
@@ -224,6 +227,7 @@ Esse spec **não** cria tabelas `User`/`Session`, nem endpoints de auth, nem pá
 ## 5. Variáveis de ambiente
 
 ### `apps/api/.env.example`
+
 ```
 DATABASE_URL=postgresql://boticario:boticario@localhost:5432/boticario
 PORT=3333
@@ -232,6 +236,7 @@ CORS_ORIGIN=http://localhost:3000
 ```
 
 ### `apps/web/.env.example`
+
 ```
 NEXT_PUBLIC_API_URL=http://localhost:3333
 ```
@@ -253,14 +258,14 @@ Secrets de domínio (`SESSION_COOKIE_SECRET`, `MAC_HASH_SECRET`) entram quando a
 
 ## 7. Riscos e mitigações
 
-| Risco | Mitigação |
-|---|---|
-| Prisma `generate` quebra no primeiro `pnpm install` (DB offline) | `postinstall` tolera DB offline (só gera client). Migration roda em passo separado |
-| TanStack Query SSR vs Client Component no App Router | `providers.tsx` como Client Component wrapper no `layout.tsx`; teste manual que a página home carrega |
+| Risco                                                                                          | Mitigação                                                                                                   |
+| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Prisma `generate` quebra no primeiro `pnpm install` (DB offline)                               | `postinstall` tolera DB offline (só gera client). Migration roda em passo separado                          |
+| TanStack Query SSR vs Client Component no App Router                                           | `providers.tsx` como Client Component wrapper no `layout.tsx`; teste manual que a página home carrega       |
 | ESLint flat config conflita com `eslint-config-next` (que ainda usa legacy em algumas versões) | Pinnar versão do `eslint-config-next` compatível; se incompatível, fallback pra `.eslintrc.cjs` por package |
-| `shared` não encontrado em runtime do Next (SSR) | `transpilePackages: ['shared']` no `next.config.ts` resolve |
-| Health check passa mas DB tá sem schema | Teste e2e roda `prisma migrate deploy` no setup |
-| Dev esquece de rodar migration e fica confuso | README quick-start deixa a ordem explícita; `pnpm db:migrate` como alias claro |
+| `shared` não encontrado em runtime do Next (SSR)                                               | `transpilePackages: ['shared']` no `next.config.ts` resolve                                                 |
+| Health check passa mas DB tá sem schema                                                        | Teste e2e roda `prisma migrate deploy` no setup                                                             |
+| Dev esquece de rodar migration e fica confuso                                                  | README quick-start deixa a ordem explícita; `pnpm db:migrate` como alias claro                              |
 
 ## 8. Dependência de outras fases
 

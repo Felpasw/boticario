@@ -11,6 +11,7 @@ Domínio do produto: ingestão de conexões de Wi-Fi de visitantes, listagem cru
 ## 2. Escopo
 
 **Dentro**
+
 - Models Prisma: `Device`, `Connection` (sem `Store`)
 - Módulo `apps/api/src/connections/`:
   - `POST /connections` — ingestão idempotente (HMAC-SHA256 do MAC + idempotency key)
@@ -39,6 +40,7 @@ Domínio do produto: ingestão de conexões de Wi-Fi de visitantes, listagem cru
 - Swagger UI em `/docs` (NestJS `@nestjs/swagger`)
 
 **Fora**
+
 - Entidade `Store` / multi-store / troca de loja / seletor / timezone por loja
 - Simulador (`POST /connections/simulate` — cortado da conversa, seed basta)
 - Notificações persistidas / cron / SSE / sininho em tempo real / tabela `Notification`
@@ -80,6 +82,7 @@ model Connection {
 `User` (herdado do `004`) ganha `devices: Device[]` e `connections: Connection[]` como relações inversas.
 
 Decisões:
+
 - Sem `Store` — desafio é explicitamente mono-loja; cada `User` é o dono do próprio contexto de dados
 - `Device.macHash` — raw MAC **nunca** persistido (LGPD + reafirmação do pinto)
 - `Connection.idempotencyKey` — único; derivado = `userId:macHash:connectedAt.toISOString()` se header não vier
@@ -90,10 +93,12 @@ Decisões:
 ## 4. Estrutura do backend
 
 ### `apps/api/src/@common/config/`
+
 - `timezone.config.ts` — classe injetável que lê `APP_TIMEZONE` do `ConfigService` com default `America/Sao_Paulo`; expõe `get(): string`
 - Importada onde queries de agregação precisam de `AT TIME ZONE`
 
 ### `apps/api/src/connections/`
+
 ```
 connections/
   connections.module.ts
@@ -125,6 +130,7 @@ connections/
 ```
 
 ### `apps/api/src/metrics/`
+
 ```
 metrics/
   metrics.module.ts
@@ -157,14 +163,17 @@ metrics/
 Cálculo das métricas em **funções puras** (`metrics-calculator.ts`) — testáveis isoladamente com fixtures.
 
 ### `apps/api/src/@common/` (adições)
+
 - `infrastructure/pipes/zod-query.pipe.ts` — valida query string contra Zod schema do shared
 - `config/timezone.config.ts` — ver §4 acima
 
 ## 5. Rotas detalhadas
 
 ### `POST /connections`
+
 **Autenticação**: requerida (admin do seed; user vem via `@CurrentUser()`)
 **Body**:
+
 ```json
 {
   "macAddress": "AA:BB:CC:DD:EE:FF",
@@ -172,48 +181,96 @@ Cálculo das métricas em **funções puras** (`metrics-calculator.ts`) — test
   "disconnectedAt": "2026-10-08T14:41:00Z"
 }
 ```
+
 **Header opcional**: `Idempotency-Key: <string>` (se ausente, derivado)
 **Sucesso (201)**:
+
 ```json
-{ "id": "uuid", "deviceId": "uuid", "connectedAt": "...", "disconnectedAt": "...", "durationSeconds": 2280 }
+{
+  "id": "uuid",
+  "deviceId": "uuid",
+  "connectedAt": "...",
+  "disconnectedAt": "...",
+  "durationSeconds": 2280
+}
 ```
+
 **Erros**:
+
 - `422 DISCONNECTED_BEFORE_CONNECTED` — `disconnectedAt < connectedAt`
 - `422 VALIDATION_ERROR` — MAC inválido, datas no futuro, etc
 - `200 (not 201)` — se idempotency key já existe, retorna o registro existente sem criar novo (ou devolve mesmo status + body — padrão `200 + já existente` pra sinalizar)
 - `429 TOO_MANY_REQUESTS` — rate limit
 
 ### `GET /connections?from=&to=&page=&perPage=`
+
 **Query**:
+
 - `from`, `to` — opcionais, default últimos 30d
 - `page` — opcional, default 1 (1-indexed)
 - `perPage` — opcional, default 50, max 200
-**Sucesso (200)**:
+  **Sucesso (200)**:
+
 ```json
 {
-  "data": [{ "id": "...", "connectedAt": "...", "disconnectedAt": "...", "durationSeconds": 2280, "deviceId": "..." }],
-  "page": 1, "perPage": 50, "total": 342, "totalPages": 7
+  "data": [
+    {
+      "id": "...",
+      "connectedAt": "...",
+      "disconnectedAt": "...",
+      "durationSeconds": 2280,
+      "deviceId": "..."
+    }
+  ],
+  "page": 1,
+  "perPage": 50,
+  "total": 342,
+  "totalPages": 7
 }
 ```
 
 ### `GET /metrics/summary?from=&to=`
+
 ```json
 {
   "period": { "from": "2026-09-08", "to": "2026-10-08" },
   "kpis": {
-    "visits": { "value": 1234, "variation": { "pct": 12.3, "direction": "up" } },
-    "uniqueVisitors": { "value": 456, "variation": { "pct": -2.1, "direction": "down" } },
-    "recurringRate": { "value": 0.35, "variation": { "pct": 1.2, "direction": "up" } },
-    "dwellMedianSeconds": { "value": 720, "variation": { "pct": 0, "direction": "flat" } }
+    "visits": {
+      "value": 1234,
+      "variation": { "pct": 12.3, "direction": "up" }
+    },
+    "uniqueVisitors": {
+      "value": 456,
+      "variation": { "pct": -2.1, "direction": "down" }
+    },
+    "recurringRate": {
+      "value": 0.35,
+      "variation": { "pct": 1.2, "direction": "up" }
+    },
+    "dwellMedianSeconds": {
+      "value": 720,
+      "variation": { "pct": 0, "direction": "flat" }
+    }
   },
   "alerts": [
-    { "type": "TRAFFIC_PEAK", "severity": "info", "title": "Pico de tráfego", "message": "Seu pico foi sábado entre 14h e 17h (87 visitas/h)" },
-    { "type": "LOW_TRAFFIC_DAY", "severity": "warning", "title": "Dia abaixo da média", "message": "Terça (06/10) ficou 32% abaixo da média das últimas 4 terças" }
+    {
+      "type": "TRAFFIC_PEAK",
+      "severity": "info",
+      "title": "Pico de tráfego",
+      "message": "Seu pico foi sábado entre 14h e 17h (87 visitas/h)"
+    },
+    {
+      "type": "LOW_TRAFFIC_DAY",
+      "severity": "warning",
+      "title": "Dia abaixo da média",
+      "message": "Terça (06/10) ficou 32% abaixo da média das últimas 4 terças"
+    }
   ]
 }
 ```
 
 ### `GET /metrics/heatmap?from=&to=`
+
 ```json
 {
   "period": { "from": "...", "to": "..." },
@@ -224,16 +281,30 @@ Cálculo das métricas em **funções puras** (`metrics-calculator.ts`) — test
   ]
 }
 ```
+
 `weekday`: 0=Dom .. 6=Sáb. Matriz esparsa (só horas com dado).
 
 ### `GET /metrics/timeseries?from=&to=&granularity=day|week`
+
 ```json
 {
   "period": { "from": "...", "to": "..." },
   "granularity": "day",
   "series": [
-    { "bucket": "2026-09-08", "visits": 34, "uniqueVisitors": 22, "newVisitors": 15, "recurringVisitors": 7 },
-    { "bucket": "2026-09-09", "visits": 41, "uniqueVisitors": 28, "newVisitors": 20, "recurringVisitors": 8 }
+    {
+      "bucket": "2026-09-08",
+      "visits": 34,
+      "uniqueVisitors": 22,
+      "newVisitors": 15,
+      "recurringVisitors": 7
+    },
+    {
+      "bucket": "2026-09-09",
+      "visits": 41,
+      "uniqueVisitors": 28,
+      "newVisitors": 20,
+      "recurringVisitors": 8
+    }
   ]
 }
 ```
@@ -241,15 +312,36 @@ Cálculo das métricas em **funções puras** (`metrics-calculator.ts`) — test
 `newVisitors + recurringVisitors = uniqueVisitors` por bucket. Classificação: um device é "recorrente" no bucket X se `firstSeenAt < inicio(X)` (apareceu antes do bucket).
 
 ### `GET /metrics/dwell-distribution?from=&to=`
+
 ```json
 {
   "period": { "from": "...", "to": "..." },
   "buckets": [
-    { "label": "0-5min",   "lowerSeconds": 0,    "upperSeconds": 300,  "count": 123 },
-    { "label": "5-15min",  "lowerSeconds": 300,  "upperSeconds": 900,  "count": 456 },
-    { "label": "15-30min", "lowerSeconds": 900,  "upperSeconds": 1800, "count": 789 },
-    { "label": "30-60min", "lowerSeconds": 1800, "upperSeconds": 3600, "count": 234 },
-    { "label": "60+min",   "lowerSeconds": 3600, "upperSeconds": null, "count": 45 }
+    { "label": "0-5min", "lowerSeconds": 0, "upperSeconds": 300, "count": 123 },
+    {
+      "label": "5-15min",
+      "lowerSeconds": 300,
+      "upperSeconds": 900,
+      "count": 456
+    },
+    {
+      "label": "15-30min",
+      "lowerSeconds": 900,
+      "upperSeconds": 1800,
+      "count": 789
+    },
+    {
+      "label": "30-60min",
+      "lowerSeconds": 1800,
+      "upperSeconds": 3600,
+      "count": 234
+    },
+    {
+      "label": "60+min",
+      "lowerSeconds": 3600,
+      "upperSeconds": null,
+      "count": 45
+    }
   ],
   "totalWithDwell": 1647
 }
@@ -258,11 +350,14 @@ Cálculo das métricas em **funções puras** (`metrics-calculator.ts`) — test
 Só considera connections com `disconnectedAt` presente (dwell conhecido). Outliers > 8h filtrados como no summary. Front renderiza como barras horizontais pra leitura rápida.
 
 ### `GET /metrics/top-recurring?from=&to=&limit=`
+
 **Query**:
+
 - `from`, `to` — opcionais, default últimos 30d
 - `limit` — opcional, default 10, max 50
 
 **Sucesso (200)**:
+
 ```json
 {
   "period": { "from": "...", "to": "..." },
@@ -284,13 +379,13 @@ Ordenação: `visitCount DESC, lastSeenAt DESC` (desempate pelo mais recente). S
 
 Função pura `alerts-evaluator.ts` recebe `(summary, prevSummary, heatmap)` e devolve `Alert[]`. Heurísticas:
 
-| Type | Trigger | Severity |
-|---|---|---|
-| `TRAFFIC_PEAK` | Identifica dia+hora com `count > p95(matriz)` | `info` |
+| Type              | Trigger                                                                                         | Severity  |
+| ----------------- | ----------------------------------------------------------------------------------------------- | --------- |
+| `TRAFFIC_PEAK`    | Identifica dia+hora com `count > p95(matriz)`                                                   | `info`    |
 | `LOW_TRAFFIC_DAY` | Dia da semana específico no período com `visits < avg(mesmo weekday períodos anteriores) * 0.7` | `warning` |
-| `NEW_RECORD` | `summary.visits > max(prev períodos)` | `success` |
-| `TREND_UP` | `variation.visits.pct > 15` | `success` |
-| `TREND_DOWN` | `variation.visits.pct < -15` | `warning` |
+| `NEW_RECORD`      | `summary.visits > max(prev períodos)`                                                           | `success` |
+| `TREND_UP`        | `variation.visits.pct > 15`                                                                     | `success` |
+| `TREND_DOWN`      | `variation.visits.pct < -15`                                                                    | `warning` |
 
 Máximo 3 alerts no response (ordena por severity: warning > info > success, trunca). Sem persistência — recalculado a cada request. Front renderiza como banner no topo do dashboard.
 
@@ -315,11 +410,13 @@ Máximo 3 alerts no response (ordena por severity: warning > info > success, tru
 ## 8. Estrutura do frontend
 
 ### `src/services/`
+
 - `connections.service.ts` → `class ConnectionsService implements IConnectionsService` com `register(payload)`, `list({ from, to, page, perPage })`
 - `metrics.service.ts` → `class MetricsService implements IMetricsService` com `summary({ from, to })`, `heatmap({ from, to })`, `timeseries({ from, to, granularity })`
 - Interfaces em `services/interfaces/connections.interface.ts` + `metrics.interface.ts` reusando tipos do `shared` via `z.infer`
 
 ### `src/hooks/`
+
 - `useConnections.ts` → `class ConnectionsHooks` com `use(params)` → `{ list: UseQueryResult, register: UseMutationResult }`
 - `useMetricsSummary.ts` → `class MetricsSummaryHooks` com `use({ from, to })` → `{ summary: UseQueryResult }`
 - `useMetricsHeatmap.ts` → análogo
@@ -328,16 +425,19 @@ Máximo 3 alerts no response (ordena por severity: warning > info > success, tru
 - Query keys: `CONNECTIONS_QUERY_KEYS = { all, list: (params) => [...] }`, `METRICS_QUERY_KEYS = { summary, heatmap, timeseries, byPeriod: (from, to) => [...] }`
 
 ### `src/stores/`
+
 - Nada novo. `dateRange` vive na URL.
 - `userStore` já veio do `004`.
 
 ### `src/components/`
+
 - **atoms/**: `KpiValue` (formata número), `VariationBadge` (seta + %), `AlertIcon` (muda ícone por severity), `SkeletonBlock`
 - **molecules/**: `KpiCard` (title + value + variation + icon), `AlertBanner` (list de alerts), `DateRangePicker` (shadcn Calendar), `PeriodShortcuts` (botões 7d/30d/90d/custom), `PaginationControls`
 - **organisms/**: `SummarySection` (grid de 4 KpiCards), `HeatmapChart` (Recharts custom via Treemap/HeatmapGrid), `TimeseriesChart` (Recharts LineChart), `ConnectionsTable` (shadcn Table com estados loading/empty/error)
 - **templates/**: `DashboardTemplate` (container + nav do shell)
 
 ### `src/app/(app)/`
+
 - `page.tsx` → `redirect('/dashboard')`
 - `dashboard/page.tsx` → Server Component que faz prefetch via TanStack Query HydrationBoundary; renderiza `<AlertBanner>` + `<SummarySection>` + `<HeatmapChart>` + `<TimeseriesChart>` com `<DateRangePicker>` + `<PeriodShortcuts>` no header
 - `connections/page.tsx` → `<ConnectionsTable>` + `<PaginationControls>` + `<DateRangePicker>`
@@ -376,6 +476,7 @@ Máximo 3 alerts no response (ordena por severity: warning > info > success, tru
 ## 13. Seed de connections
 
 `apps/api/prisma/seed/connections.ts`:
+
 - Pega o admin seedado em `004`
 - Gera ~8 semanas de connections pro user:
   - Dias: hoje - 56d até hoje
@@ -423,17 +524,17 @@ Máximo 3 alerts no response (ordena por severity: warning > info > success, tru
 
 ## 16. Riscos e mitigações
 
-| Risco | Mitigação |
-|---|---|
-| Query de agregação (heatmap/timeseries) lenta com volume maior | Index `(userId, connectedAt)` cobre tudo; se virar gargalo, materializar view por hora/dia em outra fase |
-| Timezone bug (UTC vs São Paulo) em heatmap/timeseries | SQL sempre com `AT TIME ZONE :tz` injetando `TimezoneConfig.get()`; teste e2e com dataset conhecido (visita às 23h UTC = 20h BRT em dia anterior) |
-| Alerts gerados variam entre requests (não determinísticos) | Função pura testada com fixtures; dedupe implícito já que não persiste |
-| Idempotency key colide com visita legítima no mesmo segundo | Header `Idempotency-Key` recomendado; derivação `userId:macHash:connectedAt` aceita colisão rara como aceita (próximo request com disconnectedAt atualiza) |
-| Rate limit mordendo durante demo com simulação de carga | Override em `POST /connections` pra 1000/min cobre o uso |
-| MAC hash muda se MAC_HASH_SECRET rotacionar | Documento no README que rotação do secret requer re-seed (fase deferred) |
-| Recharts heatmap custom é trabalhoso | Fallback: usar `<HeatmapGrid>` custom em CSS Grid (sem lib); ou lib externa como `@nivo/heatmap` |
-| HydrationBoundary + TanStack SSR tem edge cases com queries parametrizadas pela URL | Prefetch no Server Component com os defaults; client refetch quando `useDateRange` resolve params |
-| Virar multi-store no futuro exige migration + refactor | Aceito. Documentado como follow-up no README: extrair `Store` como entidade, trocar FK `userId` → `storeId`, adicionar seletor na UI. Custo estimado baixo (~1 dia) pelo escopo contido. |
+| Risco                                                                               | Mitigação                                                                                                                                                                                |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Query de agregação (heatmap/timeseries) lenta com volume maior                      | Index `(userId, connectedAt)` cobre tudo; se virar gargalo, materializar view por hora/dia em outra fase                                                                                 |
+| Timezone bug (UTC vs São Paulo) em heatmap/timeseries                               | SQL sempre com `AT TIME ZONE :tz` injetando `TimezoneConfig.get()`; teste e2e com dataset conhecido (visita às 23h UTC = 20h BRT em dia anterior)                                        |
+| Alerts gerados variam entre requests (não determinísticos)                          | Função pura testada com fixtures; dedupe implícito já que não persiste                                                                                                                   |
+| Idempotency key colide com visita legítima no mesmo segundo                         | Header `Idempotency-Key` recomendado; derivação `userId:macHash:connectedAt` aceita colisão rara como aceita (próximo request com disconnectedAt atualiza)                               |
+| Rate limit mordendo durante demo com simulação de carga                             | Override em `POST /connections` pra 1000/min cobre o uso                                                                                                                                 |
+| MAC hash muda se MAC_HASH_SECRET rotacionar                                         | Documento no README que rotação do secret requer re-seed (fase deferred)                                                                                                                 |
+| Recharts heatmap custom é trabalhoso                                                | Fallback: usar `<HeatmapGrid>` custom em CSS Grid (sem lib); ou lib externa como `@nivo/heatmap`                                                                                         |
+| HydrationBoundary + TanStack SSR tem edge cases com queries parametrizadas pela URL | Prefetch no Server Component com os defaults; client refetch quando `useDateRange` resolve params                                                                                        |
+| Virar multi-store no futuro exige migration + refactor                              | Aceito. Documentado como follow-up no README: extrair `Store` como entidade, trocar FK `userId` → `storeId`, adicionar seletor na UI. Custo estimado baixo (~1 dia) pelo escopo contido. |
 
 ## 17. Dependências
 

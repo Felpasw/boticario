@@ -10,12 +10,12 @@ This document is the **initial product brief**. It exists to guide the split of 
 
 The owner should not have to look at raw data. The dashboard answers five questions directly and surfaces an alert when something deserves attention:
 
-| Question the owner asks | Metric | Decision it supports |
-|---|---|---|
-| When does the store fill up? | Visits per hour and per day of week (heatmap) | Staff scheduling |
-| Do customers come back? | New vs. recurring visitors | Retention actions |
-| How long do they stay? | Average/median dwell time | Engagement, layout, service |
-| Is foot traffic growing? | Weekly trend and variation vs. previous period | Assess campaigns |
+| Question the owner asks       | Metric                                          | Decision it supports                    |
+| ----------------------------- | ----------------------------------------------- | --------------------------------------- |
+| When does the store fill up?  | Visits per hour and per day of week (heatmap)   | Staff scheduling                        |
+| Do customers come back?       | New vs. recurring visitors                      | Retention actions                       |
+| How long do they stay?        | Average/median dwell time                       | Engagement, layout, service             |
+| Is foot traffic growing?      | Weekly trend and variation vs. previous period  | Assess campaigns                        |
 | Did something unusual happen? | Automatic inline alerts on the summary endpoint | React fast without staring at the panel |
 
 **Not** a CRM, not a POS, not a storefront. **It is** a visibility panel over guest Wi-Fi connection events, built as a technical case study.
@@ -24,7 +24,7 @@ The owner should not have to look at raw data. The dashboard answers five questi
 
 ## 2. Target audience
 
-- A single store owner checking the panel from desktop or phone. The challenge brief is explicit about this: *"you are the owner of **a** store"*.
+- A single store owner checking the panel from desktop or phone. The challenge brief is explicit about this: _"you are the owner of **a** store"_.
 - No multi-tenant SaaS layer and **no `Store` entity** — `Device` and `Connection` anchor directly on `User`. Scaling to multi-store is a documented follow-up (migration + refactor, ~1 day), not something the MVP pays for upfront.
 
 ---
@@ -32,12 +32,14 @@ The owner should not have to look at raw data. The dashboard answers five questi
 ## 3. Product pillars
 
 ### 3.1. Ingestion
+
 - `POST /connections` registers a visitor connection event (`macAddress`, `connectedAt`, optional `disconnectedAt`). The owner is resolved from the session cookie — no `storeId` on the wire.
 - MAC never persists — only `HMAC-SHA256(mac, MAC_HASH_SECRET)`. The hash lets us identify recurring devices without storing the identifier.
 - Idempotent by `Idempotency-Key` header (or derived from `userId + macHash + connectedAt`).
 - Realistic ~8-week dataset is produced via `pnpm --filter api db:seed:connections` instead of an in-API simulator endpoint.
 
 ### 3.2. Analytics
+
 Precomputed on demand via SQL with the configured timezone (`AT TIME ZONE :tz`, resolved from `APP_TIMEZONE` env var, default `America/Sao_Paulo`):
 
 - `GET /connections?from=&to=&page=&perPage=` — raw paginated listing per period
@@ -48,22 +50,25 @@ Precomputed on demand via SQL with the configured timezone (`AT TIME ZONE :tz`, 
 Pure functions for metric calculations live inside the `metrics` module and are tested in isolation. The pre-period comparison window is `[from - (to - from), from]`.
 
 ### 3.3. Alerts
+
 Evaluated inline on `GET /metrics/summary` by a pure function (`alerts-evaluator.ts`). Up to 3 alerts per response, ordered by severity (warning > info > success). No table, no cron, no SSE — zero persistence.
 
-| Type | Trigger | Severity |
-|---|---|---|
-| `TRAFFIC_PEAK` | Weekday × hour cell above p95 of the matrix | `info` |
+| Type              | Trigger                                                                        | Severity  |
+| ----------------- | ------------------------------------------------------------------------------ | --------- |
+| `TRAFFIC_PEAK`    | Weekday × hour cell above p95 of the matrix                                    | `info`    |
 | `LOW_TRAFFIC_DAY` | A specific weekday 30%+ below the average of the same weekday in prior windows | `warning` |
-| `NEW_RECORD` | Current period visits above every previous equivalent window | `success` |
-| `TREND_UP` | Variation above +15% | `success` |
-| `TREND_DOWN` | Variation below -15% | `warning` |
+| `NEW_RECORD`      | Current period visits above every previous equivalent window                   | `success` |
+| `TREND_UP`        | Variation above +15%                                                           | `success` |
+| `TREND_DOWN`      | Variation below -15%                                                           | `warning` |
 
 The front renders them as a banner on top of the dashboard.
 
 ### 3.4. Authentication
+
 Session-based with `HttpOnly SameSite=Lax Secure` cookies. Password hashed with `argon2id`. Session store lives in **Postgres** (table `sessions`) — no Redis in the stack. Logout invalidates the session row immediately.
 
 ### 3.5. Seed
+
 `pnpm --filter api db:seed` creates the admin user. `pnpm --filter api db:seed:connections` populates ~8 weeks of connections with realistic patterns (lunch and evening peaks, Saturday heavier, Sunday lighter, ~35% recurring, dwell 5–40 min). Deterministic via `faker.seed(42)` so repeated runs produce the same dataset.
 
 ---
@@ -94,6 +99,7 @@ Session-based with `HttpOnly SameSite=Lax Secure` cookies. Password hashed with 
 ## 6. Tech stack
 
 ### Frontend (`apps/web/`)
+
 - **Next.js** (App Router), strict TypeScript
 - Remote state: **TanStack Query**
 - Forms: **React Hook Form + Zod** (schemas shared via `packages/shared`)
@@ -102,6 +108,7 @@ Session-based with `HttpOnly SameSite=Lax Secure` cookies. Password hashed with 
 - Tests: **Jest + Testing Library** (unit/integration) + **Playwright** (E2E)
 
 ### Backend (`apps/api/`)
+
 - **NestJS** on Node 20, strict TypeScript
 - **Postgres 16** via **Prisma** (schema as source of truth)
 - **Passport** (local strategy) + session cookie + session store in Postgres
@@ -111,10 +118,12 @@ Session-based with `HttpOnly SameSite=Lax Secure` cookies. Password hashed with 
 - Tests: **Jest** + **`@nestjs/testing`** + **supertest** + **Testcontainers** (real Postgres for repository/integration tests)
 
 ### Shared (`packages/shared/`)
+
 - DTOs, Zod schemas, enum constants shared between `api` and `web`
 - Internal only (not published to a registry)
 
 ### Infra
+
 - Monorepo with **pnpm workspaces**: `apps/api`, `apps/web`, `packages/shared`
 - Local: **docker-compose** with Postgres 16 (zero Redis)
 - CI: **GitHub Actions** with parallel jobs (lint, typecheck, test, build, commitlint; E2E added in `005`)

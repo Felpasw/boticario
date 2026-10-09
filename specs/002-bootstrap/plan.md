@@ -19,6 +19,7 @@ Entregar um monorepo onde o próximo dev (ou o próprio Felpa dois meses depois)
 Tentação clássica: aproveitar o bootstrap pra já criar `User`, módulo `auth`, página de login, "só pra ter alguma coisa". **Não.**
 
 Justificativa:
+
 - O schema do Prisma vai mudar várias vezes conforme `004-auth` e `005-wifi-insights` detalham modelo. Criar entidade agora = retrabalho + migrations órfãs.
 - Health check sem domínio é smoke test suficiente pra provar que a stack funciona.
 - Separação limpa: quando a Release PR de `002` for revisada, o diff é 100% infra. Mais fácil pro reviewer.
@@ -41,10 +42,12 @@ Padrão atual estável. `.nvmrc` fixa, CI matrix bate.
 ### 4.3 Shared via build (tsc), não via ts-paths
 
 Opções:
+
 - (A) `ts-paths` com import direto do `src/` — zero build step
 - (B) Build com `tsc` e consumir `dist/` — build explícito
 
 Decisão: **(B)**. Rationale:
+
 - Vercel/Next.js tem fricção com ts-paths cross-workspace (precisa `transpilePackages` + às vezes bundler config)
 - Build explícito expõe quebra de API cedo (CI do `003` roda `pnpm -r build` e vai falhar se shared quebrar)
 - Topological ordering do pnpm cuida da ordem (`shared` builda antes de `api`/`web` que dependem dele)
@@ -61,6 +64,7 @@ Alternativa descartada: `.eslintrc.cjs` por package — mais arquivos, config du
 ### 4.5 Jest no api, Vitest no web (padrão `money-assistance`)
 
 Decisão: **Jest no `apps/api`, Vitest no `apps/web` e `packages/shared`**. Rationale:
+
 - `apps/api`: Jest é default do NestJS, zero fricção com `@nestjs/testing` + `supertest` + Testcontainers
 - `apps/web`: Vitest + Testing Library + jsdom bate com o padrão do `money-assistance` (`web/vitest.config.ts`), hot reload rápido e integração nativa com Vite/Next
 - `packages/shared`: Vitest (compartilha setup com web; schemas Zod se beneficiam do watch rápido)
@@ -108,6 +112,7 @@ Pra reduzir ruído na Release PR:
 5 bundles. Cada um vira 1 PR → 1 bump por package afetado via release-please.
 
 Scope dos commits:
+
 - Workspace/root → `chore(repo):` ou `build(repo):`
 - apps/api → `feat(api):`
 - apps/web → `feat(web):`

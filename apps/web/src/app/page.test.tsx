@@ -6,8 +6,6 @@ import Home from './page';
 describe('Home', () => {
   it('renders the Boticario heading', () => {
     render(<Home />);
-    expect(
-      screen.getByRole('heading', { name: /Boticario Wi-Fi Insights/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Boticario Wi-Fi Insights/i })).toBeInTheDocument();
   });
 });

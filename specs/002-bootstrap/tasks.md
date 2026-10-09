@@ -50,7 +50,7 @@
   - `postinstall` do `apps/api/package.json` roda `prisma generate`
   - Módulo `health` (em `src/health/`):
     - `health.controller.ts` → `GET /health` retorna `{ status, db, timestamp }`
-    - `health.service.ts` → faz `prisma.$queryRaw\`SELECT 1\`` e devolve `db: 'ok' | 'error'`
+    - `health.service.ts` → faz `prisma.$queryRaw\`SELECT 1\``e devolve`db: 'ok' | 'error'`
     - `health.module.ts` → import no `app.module.ts`
   - `infrastructure/prisma/prisma.module.ts` + `prisma.service.ts` (extends `PrismaClient` com `onModuleInit` conectando; module `@Global()`)
   - `.env.example` com `DATABASE_URL`, `PORT=3333`, `CORS_ORIGIN=http://localhost:3000`, `NODE_ENV=development`
