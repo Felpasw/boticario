@@ -283,21 +283,21 @@ Each phase starts with tests before code (TDD rule).
 
 ---
 
-## 12. Local setup (post-bootstrap)
+## 12. Local setup
 
 ```sh
-cp .env.example .env
+# Env files (edit if the defaults do not fit)
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
 
-# Postgres (via docker-compose)
+# Postgres via docker-compose (host port 5434 to avoid clashing with a local server)
 docker compose up -d
 
-# Install workspace deps
+# Install workspace deps (runs husky + prisma generate via lifecycle scripts)
 pnpm install
 
-# Database
+# Apply Prisma migrations (no models yet — just initialises the migrations table)
 pnpm --filter api db:migrate
-pnpm --filter api db:seed
-pnpm --filter api db:seed:connections
 
 # API + web in parallel
 pnpm dev
@@ -305,16 +305,30 @@ pnpm dev
 
 - Web: http://localhost:3000
 - API: http://localhost:3333
-- Swagger: http://localhost:3333/docs
+- Health: `curl http://localhost:3333/health` → `{ "status": "ok", "db": "ok", "timestamp": "..." }`
+- Swagger (added in `005`): http://localhost:3333/docs
 
-### Required env vars (initial list)
+Seed scripts (`db:seed`, `db:seed:connections`) land with specs `004-auth` and `005-wifi-insights` respectively.
+
+### Required env vars
+
+`apps/api/.env`:
 
 ```
-DATABASE_URL=postgres://...
-SESSION_COOKIE_SECRET=...
-MAC_HASH_SECRET=...
-APP_TIMEZONE=America/Sao_Paulo
+NODE_ENV=development
+PORT=3333
 CORS_ORIGIN=http://localhost:3000
+LOG_LEVEL=info
+DATABASE_URL=postgresql://boticario:boticario@localhost:5434/boticario?schema=public
+# Added in later specs:
+# SESSION_COOKIE_SECRET=...      # 004-auth
+# MAC_HASH_SECRET=...            # 005-wifi-insights
+# APP_TIMEZONE=America/Sao_Paulo # 005-wifi-insights
+```
+
+`apps/web/.env.local`:
+
+```
 NEXT_PUBLIC_API_URL=http://localhost:3333
 ```
 
@@ -333,4 +347,4 @@ NEXT_PUBLIC_API_URL=http://localhost:3333
 
 ## 14. Status
 
-Initial brief, repository live at https://github.com/Felpasw/boticario. Nothing implemented yet beyond the specs skeleton. Next step: execute `specs/001-release-management/tasks.md`.
+Repository live at https://github.com/Felpasw/boticario. Specs `001-release-management` and `002-bootstrap` are implemented: release-please + commitlint + husky, pnpm workspace, docker-compose Postgres, NestJS api with a `/health` endpoint hitting Prisma, Next.js web with a QueryClient-wrapped home, shared Zod schema consumed cross-package, ESLint flat configs and Prettier. Next step: `specs/003-ci-pipeline/`.

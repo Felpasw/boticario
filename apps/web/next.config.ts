@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   transpilePackages: ['shared'],
   cacheComponents: true,
   partialPrefetching: true,
+  agentRules: false,
   turbopack: {
     rules: {
       '*.css': {

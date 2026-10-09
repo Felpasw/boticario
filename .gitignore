@@ -16,6 +16,9 @@ out/
 .vercel/
 *.tsbuildinfo
 
+# Next.js generated types (rewritten on every dev/build)
+apps/web/next-env.d.ts
+
 # Env files
 .env
 .env.local

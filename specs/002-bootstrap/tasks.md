@@ -24,7 +24,7 @@
 
 ## Fase 0 — Workspace foundation
 
-- [ ] **BOT-6** [S] — Workspace raiz:
+- [x] **BOT-6** [S] — ✅ commit `c70025e` — Workspace raiz:
   - `pnpm-workspace.yaml` com `packages: ['apps/*', 'packages/*']`
   - `package.json` raiz: `"name": "boticario"`, `"private": true`, `"packageManager": "pnpm@9.x"`, scripts top-level (`dev`, `build`, `lint`, `typecheck`, `test`, `prepare`)
   - `.nvmrc` com `20`
@@ -32,7 +32,7 @@
   - `.gitignore` cobrindo `node_modules/`, `dist/`, `build/`, `.next/`, `.turbo/`, `.env`, `.env.local`, `*.log`, `coverage/`, `.DS_Store`, `pinto[.md`, `Desafio Técnico Desenvolvedor*.pdf`
   - Validação: `pnpm install` roda sem erro
 
-- [ ] **BOT-7** [S] — Docker Compose + envs base:
+- [x] **BOT-7** [S] — ✅ commit `c70025e` — Docker Compose + envs base:
   - `docker-compose.yml` com serviço `postgres:16-alpine` + volume + healthcheck
   - User/pass/db: `boticario/boticario/boticario`, porta `5432:5432`
   - Validação: `docker compose up -d` sobe o Postgres saudável (`docker compose ps` mostra `healthy`)
@@ -41,7 +41,7 @@
 
 ## Fase 1 — Apps skeleton
 
-- [ ] **BOT-8** [S] — `apps/api` NestJS skeleton (estrutura igual ao `money-assistance`):
+- [x] **BOT-8** [S] — ✅ commit `2763fbb` — `apps/api` NestJS skeleton (estrutura igual ao `money-assistance`):
   - `nest new apps/api --skip-git --package-manager pnpm --strict`
   - Reorganiza `src/` em: módulos direto na raiz (ex: `src/health/`), `src/@common/` (com `domain/{constants,ports}` + `infrastructure/{pipes,logging}`), `src/infrastructure/prisma/`, `src/config/`
   - `main.ts` com `app.enableCors({ origin: process.env.CORS_ORIGIN, credentials: true })`, `app.listen(process.env.PORT ?? 3333)`, logger pino raiz
@@ -57,7 +57,7 @@
   - `test/health.e2e-spec.ts` — e2e com supertest batendo em `/health` e esperando `200` + `db: 'ok'`
   - Validação: `pnpm --filter api dev` sobe em `:3333`; `curl :3333/health` → `200` com `db: 'ok'`; `pnpm --filter api test:e2e` passa
 
-- [ ] **BOT-10** [S] — `packages/shared` smoke export:
+- [x] **BOT-10** [S] — ✅ commit `e7f030b` — `packages/shared` smoke export:
   - `package.json` com `"name": "shared"`, `"version": "0.1.0"`, `"private": true`, `"main": "./dist/index.js"`, `"types": "./dist/index.d.ts"`, `"scripts": { "build": "tsc", "dev": "tsc --watch", "typecheck": "tsc --noEmit" }`
   - `tsconfig.json` extende `../../tsconfig.base.json` com `outDir: ./dist`, `rootDir: ./src`, `declaration: true`
   - `src/index.ts` exporta 1 schema Zod smoke (ex: `HealthResponseSchema` com `status, db, timestamp`) + tipo inferido
@@ -66,7 +66,7 @@
   - `apps/api/src/modules/health/health.controller.ts` valida resposta contra `HealthResponseSchema` (prova consumo cross-package)
   - Validação: `pnpm -r build` builda shared antes de api; `pnpm --filter api test:e2e` ainda passa
 
-- [ ] **BOT-9** [S] — `apps/web` Next.js skeleton (estrutura igual ao `money-assistance`):
+- [x] **BOT-9** [S] — ✅ commit `dbca2c2` — `apps/web` Next.js skeleton (estrutura igual ao `money-assistance`):
   - `pnpm create next-app@latest apps/web --typescript --tailwind --app --src-dir --no-eslint --import-alias "@/*"` (eslint vem do flat config da raiz)
   - Remove boilerplate; substitui `src/app/page.tsx` por placeholder minimal
   - `next.config.ts` com `transpilePackages: ['shared']`
@@ -93,7 +93,7 @@
 
 ## Fase 2 — Lint, format, scripts
 
-- [ ] **BOT-11** [S] — ESLint flat config na raiz:
+- [x] **BOT-11** [S] — ✅ commit `1653a4e` (per-package instead of root-only, mirroring money-assistance) — ESLint flat config na raiz:
   - `eslint.config.mjs` com imports de `@eslint/js`, `typescript-eslint`, `eslint-config-next` (bridged se necessário)
   - Base config aplica em `**/*.{ts,tsx}`: TS strict rules + import ordering (regra do CLAUDE.md: builtin → external → internal → parent → sibling → index, alfabético intra-grupo)
   - Overrides:
@@ -103,7 +103,7 @@
   - Scripts `lint` em cada package: `eslint . --max-warnings=0`
   - Validação: `pnpm lint` passa verde em todos os packages
 
-- [ ] **BOT-12** [S] — Prettier + editorconfig:
+- [x] **BOT-12** [S] — ✅ commit `1653a4e` — Prettier + editorconfig:
   - `.prettierrc` na raiz: `singleQuote: true`, `trailingComma: 'all'`, `printWidth: 100`
   - `.prettierignore` cobre `dist/`, `.next/`, `node_modules/`, `coverage/`, `pnpm-lock.yaml`
   - `.editorconfig` padrão (`indent_style = space`, `indent_size = 2`, `end_of_line = lf`, `insert_final_newline = true`, `charset = utf-8`)
@@ -115,12 +115,12 @@
 
 ## Fase 3 — Dev flow + validação final
 
-- [ ] **BOT-13** [S] — Scripts `pnpm dev` paralelo:
+- [x] **BOT-13** [S] — ✅ delivered as part of commit `c70025e` (root script) + validated in Bundle F — Scripts `pnpm dev` paralelo:
   - Script raiz `"dev": "pnpm -r --parallel --filter './apps/*' dev"` roda `apps/api dev` e `apps/web dev` juntos
   - Script `"shared:dev": "pnpm --filter shared dev"` roda tsc watch do shared em terminal separado (opcional, só se dev tiver mudando shared ao vivo)
   - Validação: `pnpm dev` sobe api `:3333` e web `:3000` sem crash; ambos respondem
 
-- [ ] **BOT-14** [S] — Quick-start no README + smoke end-to-end:
+- [x] **BOT-14** [S] — ✅ Bundle F — README §12 rewritten, host port moved to 5434, `agentRules: false` on Next (removes auto-generated AGENTS.md), smoke run: Postgres healthy, migrate ok, `pnpm dev` boots both, `/health` returns `{status:'ok', db:'ok'}`, web `/` returns 200 — Quick-start no README + smoke end-to-end:
   - Confirma que a seção `## 11. Local setup` do `README.md` bate com o fluxo real
   - Executa do zero numa pasta limpa: `pnpm install` → `docker compose up -d` → `pnpm --filter api db:migrate` → `pnpm dev` → `curl :3333/health` → browser em `:3000`
   - Ajusta README se alguma etapa divergiu (ex: comando de migrate exato, nome de script)
