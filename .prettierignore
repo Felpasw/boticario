@@ -7,3 +7,8 @@
 pnpm-lock.yaml
 pinto[.md
 apps/web/next-env.d.ts
+
+# release-please owns these files; prettier keeps rewriting them and
+# conflicts with the bot's next release PR
+apps/*/CHANGELOG.md
+.release-please-manifest.json
