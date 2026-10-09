@@ -1,6 +1,6 @@
 # Boticario — Wi-Fi Insights
 
-A dashboard that gives a Boticário store owner visibility over the visitors who connect to the guest Wi-Fi. The data is simulated through ingestion endpoints (no real router integration) and turned into actionable metrics: when the store fills, who comes back, how long they stay, how the week is trending, and automatic alerts when something unusual happens.
+A dashboard that gives a Boticário store owner visibility over the visitors who connect to the guest Wi-Fi. The data is simulated through an ingestion endpoint (no real router integration) and turned into actionable metrics: when the store fills, who comes back, how long they stay, how the week is trending, and automatic alerts when something unusual happens.
 
 This document is the **initial product brief**. It exists to guide the split of the work into phases (`specs/NNN-slug/`) and to align decisions before we start coding.
 
@@ -16,7 +16,7 @@ The owner should not have to look at raw data. The dashboard answers five questi
 | Do customers come back? | New vs. recurring visitors | Retention actions |
 | How long do they stay? | Average/median dwell time | Engagement, layout, service |
 | Is foot traffic growing? | Weekly trend and variation vs. previous period | Assess campaigns |
-| Did something unusual happen? | Automatic in-app notifications | React fast without staring at the panel |
+| Did something unusual happen? | Automatic inline alerts on the summary endpoint | React fast without staring at the panel |
 
 **Not** a CRM, not a POS, not a storefront. **It is** a visibility panel over guest Wi-Fi connection events, built as a technical case study.
 
@@ -24,65 +24,65 @@ The owner should not have to look at raw data. The dashboard answers five questi
 
 ## 2. Target audience
 
-- A single store owner (or small group of store owners) checking the panel from desktop or phone
-- No multi-tenant SaaS layer, but the data model carries `storeId` everywhere so the step to multi-tenant is trivial
+- A single store owner checking the panel from desktop or phone. The challenge brief is explicit about this: *"you are the owner of **a** store"*.
+- No multi-tenant SaaS layer and **no `Store` entity** — `Device` and `Connection` anchor directly on `User`. Scaling to multi-store is a documented follow-up (migration + refactor, ~1 day), not something the MVP pays for upfront.
 
 ---
 
 ## 3. Product pillars
 
 ### 3.1. Ingestion
-- `POST /connections` registers a visitor connection event (storeId, mac, connectedAt, optional disconnectedAt).
+- `POST /connections` registers a visitor connection event (`macAddress`, `connectedAt`, optional `disconnectedAt`). The owner is resolved from the session cookie — no `storeId` on the wire.
 - MAC never persists — only `HMAC-SHA256(mac, MAC_HASH_SECRET)`. The hash lets us identify recurring devices without storing the identifier.
-- Idempotent by `Idempotency-Key` header (or derived from `storeId + macHash + connectedAt`).
-- `POST /connections/simulate` generates N realistic connections for a store (used to demo the live notifications).
+- Idempotent by `Idempotency-Key` header (or derived from `userId + macHash + connectedAt`).
+- Realistic ~8-week dataset is produced via `pnpm --filter api db:seed:connections` instead of an in-API simulator endpoint.
 
 ### 3.2. Analytics
-Precomputed on demand via SQL with the store timezone (`AT TIME ZONE store.timezone`):
-- `GET /stores/:id/analytics/summary` — KPIs for the period + variation vs. previous period
-- `GET /stores/:id/analytics/heatmap` — weekday × hour matrix
-- `GET /stores/:id/analytics/timeseries?granularity=day|week`
-- `GET /stores/:id/analytics/visitors` — new vs. recurring
-- `GET /stores/:id/analytics/insights` — textual sentences generated from the data (e.g. "Your peak is Saturday 2–5 pm")
+Precomputed on demand via SQL with the configured timezone (`AT TIME ZONE :tz`, resolved from `APP_TIMEZONE` env var, default `America/Sao_Paulo`):
 
-Pure functions for metric calculations live inside the `analytics` module and are tested in isolation.
+- `GET /connections?from=&to=&page=&perPage=` — raw paginated listing per period
+- `GET /metrics/summary?from=&to=` — KPIs for the period, variation vs. previous period, inline alerts
+- `GET /metrics/heatmap?from=&to=` — weekday × hour matrix
+- `GET /metrics/timeseries?from=&to=&granularity=day|week` — time series
 
-### 3.3. Notifications
-Four types, all evaluated in-process (no worker, no queue, no Redis). Dedup via `dedupeKey` unique constraint on the table so the same alert never duplicates.
+Pure functions for metric calculations live inside the `metrics` module and are tested in isolation. The pre-period comparison window is `[from - (to - from), from]`.
 
-| Type | Trigger | When it fires |
+### 3.3. Alerts
+Evaluated inline on `GET /metrics/summary` by a pure function (`alerts-evaluator.ts`). Up to 3 alerts per response, ordered by severity (warning > info > success). No table, no cron, no SSE — zero persistence.
+
+| Type | Trigger | Severity |
 |---|---|---|
-| `TRAFFIC_PEAK` | Connections in the last window above a threshold | Inline on `POST /connections` |
-| `NEW_RECORD` | Today surpasses the all-time best day | Inline on `POST /connections` |
-| `LOW_TRAFFIC_DAY` | Yesterday X% below the weekday average | Daily cron 08:00 (store tz) via `@nestjs/schedule` |
-| `DAILY_SUMMARY` | Previous day summary | Daily cron 08:00 |
+| `TRAFFIC_PEAK` | Weekday × hour cell above p95 of the matrix | `info` |
+| `LOW_TRAFFIC_DAY` | A specific weekday 30%+ below the average of the same weekday in prior windows | `warning` |
+| `NEW_RECORD` | Current period visits above every previous equivalent window | `success` |
+| `TREND_UP` | Variation above +15% | `success` |
+| `TREND_DOWN` | Variation below -15% | `warning` |
 
-Delivery is in-app via SSE (`GET /stores/:id/notifications/stream`). Email/push stays as future work.
+The front renders them as a banner on top of the dashboard.
 
 ### 3.4. Authentication
 Session-based with `HttpOnly SameSite=Lax Secure` cookies. Password hashed with `argon2id`. Session store lives in **Postgres** (table `sessions`) — no Redis in the stack. Logout invalidates the session row immediately.
 
-### 3.5. Simulator and seed
-- `pnpm db:seed` creates 2 stores and ~8 weeks of connections with realistic patterns (lunch and evening peaks, Saturday heavier, Sunday lighter, ~35% recurring, dwell 5–40 min).
-- `/connections/simulate` on the API lets the dashboard trigger live events during a demo and watch notifications arrive via SSE.
+### 3.5. Seed
+`pnpm --filter api db:seed` creates the admin user. `pnpm --filter api db:seed:connections` populates ~8 weeks of connections with realistic patterns (lunch and evening peaks, Saturday heavier, Sunday lighter, ~35% recurring, dwell 5–40 min). Deterministic via `faker.seed(42)` so repeated runs produce the same dataset.
 
 ---
 
 ## 4. Main functional requirements
 
 - Sign up / login (email + password, cookie session)
-- Dashboard page: store selector + period selector (7d/30d/90d/custom), KPI cards with variation, heatmap, trend chart, new vs. recurring, textual insights, notification bell
-- Notifications page: list with filter (read/unread), mark as read, mark all, rules configuration (enable/disable + tune thresholds)
+- Dashboard page: period selector (7d/30d/90d/custom), KPI cards with variation, heatmap, trend chart, alert banner
+- Connections page: paginated table with period filter + loading / empty / error states
 - All data-fetching components have explicit **loading / empty / error** states
-- Ingestion endpoints protected by auth (owner can only ingest for their own stores)
-- Rate limit on `POST /connections` (with simulator bypass)
+- Ingestion endpoint protected by auth (owner ingests only for themselves — no cross-user access path exists)
+- Rate limit on `POST /connections` (1000 req/min per IP for demo bursts) and `POST /auth/login` (10/min for brute-force protection)
 
 ---
 
 ## 5. Non-functional requirements
 
 - **TypeScript strict** across every package.
-- **TDD mandatory** for every production module: unit tests on metrics and notification rules, integration tests on controllers, E2E on the critical dashboard flow.
+- **TDD mandatory** for every production module: unit tests on metrics and alert rules, integration tests on repositories (Testcontainers), E2E on the critical dashboard flow (Playwright).
 - **Performance:** dashboard first paint < 2 s on broadband; analytics queries < 300 ms server-side at seed volume.
 - **Error handling:** standardized error envelope on every response; error boundary per dashboard section so one broken block does not kill the page.
 - **Privacy / LGPD:** MAC never persisted (only HMAC hash); PII (email) never in log lines.
@@ -98,16 +98,15 @@ Session-based with `HttpOnly SameSite=Lax Secure` cookies. Password hashed with 
 - Remote state: **TanStack Query**
 - Forms: **React Hook Form + Zod** (schemas shared via `packages/shared`)
 - UI: **Tailwind + shadcn/ui**
-- Charts: **Recharts**
+- Charts: **Recharts** (heatmap custom in CSS Grid)
 - Tests: **Jest + Testing Library** (unit/integration) + **Playwright** (E2E)
 
 ### Backend (`apps/api/`)
 - **NestJS** on Node 20, strict TypeScript
 - **Postgres 16** via **Prisma** (schema as source of truth)
 - **Passport** (local strategy) + session cookie + session store in Postgres
-- **`@nestjs/schedule`** for cron (daily jobs)
-- **`EventEmitter2`** for in-process pub/sub (ingestion → notification evaluation)
 - Rate limit via **`@nestjs/throttler`**
+- API docs via **`@nestjs/swagger`** at `/docs`
 - Logs: **pino** structured + request id
 - Tests: **Jest** + **`@nestjs/testing`** + **supertest** + **Testcontainers** (real Postgres for repository/integration tests)
 
@@ -118,9 +117,9 @@ Session-based with `HttpOnly SameSite=Lax Secure` cookies. Password hashed with 
 ### Infra
 - Monorepo with **pnpm workspaces**: `apps/api`, `apps/web`, `packages/shared`
 - Local: **docker-compose** with Postgres 16 (zero Redis)
-- CI: **GitHub Actions** with parallel jobs (lint, typecheck, test, build, commitlint)
+- CI: **GitHub Actions** with parallel jobs (lint, typecheck, test, build, commitlint; E2E added in `005`)
 - Release automation: **release-please** per package (`apps/api`, `apps/web` only; `packages/shared` is internal)
-- Deploy: **Vercel** (web) + **Fly.io / Railway standard** (api — always-on required for cron) + **Neon** (Postgres)
+- Deploy: **Vercel** (web) + **Fly.io / Railway standard** (api) + **Neon** (Postgres). No cron processes, so always-on is not a hard requirement — but still recommended for cold-start latency.
 
 ---
 
@@ -129,16 +128,14 @@ Session-based with `HttpOnly SameSite=Lax Secure` cookies. Password hashed with 
 ```
 boticario/
   apps/
-    api/                  # NestJS (HTTP + crons + SSE, single process)
+    api/                  # NestJS (HTTP only — no crons, no workers)
       src/
-        modules/
-          auth/
-          stores/
-          connections/
-          analytics/
-          notifications/
-        common/           # filters, pipes, interceptors
-        infra/            # prisma, event-emitter config
+        @common/
+          config/         # TimezoneConfig
+          infrastructure/ # filters, pipes, interceptors
+        auth/
+        connections/
+        metrics/
         main.ts
       prisma/
       test/
@@ -148,7 +145,7 @@ boticario/
       src/
         app/
         components/
-        features/         # dashboard, notifications, auth
+        features/         # dashboard, auth
         lib/              # api client, hooks
       CHANGELOG.md
       package.json
@@ -161,7 +158,8 @@ boticario/
     001-release-management/
     002-bootstrap/
     003-ci-pipeline/
-    NNN-slug/
+    004-auth/
+    005-wifi-insights/
       spec.md             # the what
       plan.md             # the how
       tasks.md            # BOT-N executable items
@@ -188,27 +186,15 @@ boticario/
 ## 8. Data model (initial sketch)
 
 ```prisma
-model Store {
-  id        String   @id @default(uuid())
-  ownerId   String
-  name      String
-  timezone  String   @default("America/Sao_Paulo")
-  createdAt DateTime @default(now())
-  owner         User          @relation(fields: [ownerId], references: [id])
-  devices       Device[]
-  connections   Connection[]
-  rules         NotificationRule[]
-  notifications Notification[]
-}
-
 model User {
   id           String    @id @default(uuid())
   email        String    @unique
   name         String
   passwordHash String
   createdAt    DateTime  @default(now())
-  stores       Store[]
   sessions     Session[]
+  devices      Device[]
+  connections  Connection[]
 }
 
 model Session {
@@ -223,86 +209,72 @@ model Session {
 
 model Device {
   id          String   @id @default(uuid())
-  storeId     String
+  userId      String
   macHash     String   // HMAC-SHA256(mac, MAC_HASH_SECRET); raw MAC never stored
   firstSeenAt DateTime
   lastSeenAt  DateTime
-  store       Store    @relation(fields: [storeId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   connections Connection[]
-  @@unique([storeId, macHash])
+  @@unique([userId, macHash])
+  @@index([userId, lastSeenAt])
 }
 
 model Connection {
   id              String    @id @default(uuid())
-  storeId         String
+  userId          String
   deviceId        String
   connectedAt     DateTime
   disconnectedAt  DateTime?
   durationSeconds Int?
   idempotencyKey  String    @unique
   createdAt       DateTime  @default(now())
-  store           Store     @relation(fields: [storeId], references: [id])
-  device          Device    @relation(fields: [deviceId], references: [id])
-  @@index([storeId, connectedAt])
-}
-
-model NotificationRule {
-  id      String           @id @default(uuid())
-  storeId String
-  type    NotificationType
-  params  Json             // e.g. { "threshold": 30, "windowMinutes": 60 }
-  enabled Boolean          @default(true)
-  store   Store            @relation(fields: [storeId], references: [id])
-}
-
-model Notification {
-  id        String   @id @default(uuid())
-  storeId   String
-  ruleId    String?
-  type      NotificationType
-  title     String
-  message   String
-  payload   Json
-  dedupeKey String   @unique
-  readAt    DateTime?
-  createdAt DateTime @default(now())
-  store     Store    @relation(fields: [storeId], references: [id])
-  @@index([storeId, createdAt])
-}
-
-enum NotificationType {
-  TRAFFIC_PEAK
-  LOW_TRAFFIC_DAY
-  NEW_RECORD
-  DAILY_SUMMARY
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device          Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  @@index([userId, connectedAt])
+  @@index([deviceId, connectedAt])
 }
 ```
 
+Mono-loja by challenge design — no `Store` entity. See §9 "Multi-store evolution" below for the documented upgrade path.
+
 ---
 
-## 9. Roadmap
+## 9. Multi-store evolution (follow-up, not in MVP)
+
+Scaling the model to multi-store is a small, well-understood migration:
+
+1. Add `Store` entity with `ownerId`, `name`, `timezone`.
+2. Migration: `ALTER TABLE device/connection RENAME COLUMN user_id TO store_id` + nullable backfill.
+3. Create one `Store` per existing `User`, populate FKs, drop nullability.
+4. Extract `apps/api/src/stores/` module with `StoresService.getStoresForOwner`.
+5. Resolve active store per request (header, path param or UI selector).
+6. UI: store selector in the nav + persistence of the selection.
+
+Estimated effort: ~1 day. Deliberately out of scope for the challenge MVP.
+
+---
+
+## 10. Roadmap
 
 Phase ordering (full detail in each `specs/NNN-slug/`):
 
 - **001-release-management** — release-please + commitlint + husky. **Priority zero**: every commit from here onward feeds the auto-changelog.
 - **002-bootstrap** — monorepo skeleton: pnpm workspaces, `apps/api` (NestJS), `apps/web` (Next.js), `packages/shared`, docker-compose Postgres, Prisma init, base tsconfig/eslint/prettier.
 - **003-ci-pipeline** — GitHub Actions: lint, typecheck, test, build, commitlint jobs in parallel on every PR and push to `main`.
-- **004-auth** — users, sessions, cookie-based auth, login/register/logout endpoints and pages. (to be written)
-- **005-wifi-insights** — `Store`, `Device`, `Connection`, `NotificationRule`, `Notification`, ingestion, analytics, notifications, SSE, dashboard, simulator. (to be written; working draft lives in `pinto[.md`)
+- **004-auth** — users, sessions, cookie-based auth, login/register/logout endpoints and pages.
+- **005-wifi-insights** — `Device`, `Connection`, ingestion, metrics endpoints with inline alerts, dashboard page, connections page, seed, Playwright E2E.
 
 Each phase starts with tests before code (TDD rule).
 
 ---
 
-## 10. Open questions (decide as they come up)
+## 11. Open questions (decide as they come up)
 
-- **Insights textuais** — função determinística baseada no heatmap/trend, ou chamada a LLM (opcional, requer API key)? Default: determinístico.
-- **Rate limit on `POST /connections`** — por IP + exceção interna pro simulador, ou endpoint separado sem limit?
-- **Deploy final da API** — Fly.io (preferência: machine always-on, cron confiável) ou Railway standard. Decisão na fase de deploy.
+- **Deploy final da API** — Fly.io (machine always-on, lower cold start) or Railway standard. Decision deferred to the deploy spec.
 
 ---
 
-## 11. Local setup (post-bootstrap)
+## 12. Local setup (post-bootstrap)
 
 ```sh
 cp .env.example .env
@@ -316,6 +288,7 @@ pnpm install
 # Database
 pnpm --filter api db:migrate
 pnpm --filter api db:seed
+pnpm --filter api db:seed:connections
 
 # API + web in parallel
 pnpm dev
@@ -331,13 +304,14 @@ pnpm dev
 DATABASE_URL=postgres://...
 SESSION_COOKIE_SECRET=...
 MAC_HASH_SECRET=...
+APP_TIMEZONE=America/Sao_Paulo
 CORS_ORIGIN=http://localhost:3000
 NEXT_PUBLIC_API_URL=http://localhost:3333
 ```
 
 ---
 
-## 12. Project conventions
+## 13. Project conventions
 
 - Conventional Commits (see `specs/001-release-management/`).
 - Branch naming: `BOT-N/felpa-<name>`.
@@ -348,6 +322,6 @@ NEXT_PUBLIC_API_URL=http://localhost:3333
 
 ---
 
-## 13. Status
+## 14. Status
 
 Initial brief, repository live at https://github.com/Felpasw/boticario. Nothing implemented yet beyond the specs skeleton. Next step: execute `specs/001-release-management/tasks.md`.
