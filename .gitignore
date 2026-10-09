@@ -4,6 +4,9 @@ CLAUDE.md
 # Challenge brief (not for the repo)
 Desafio Técnico Desenvolvedor*.pdf
 
+# Dependencies
+node_modules/
+
 # OS
 .DS_Store
 Thumbs.db

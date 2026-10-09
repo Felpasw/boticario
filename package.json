@@ -1,0 +1,16 @@
+{
+  "name": "boticario",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Boticario Wi-Fi Insights — monorepo root (release-please + commitlint only; workspace layout lands in 002-bootstrap)",
+  "scripts": {
+    "prepare": "husky",
+    "commitlint": "commitlint"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "husky": "^9.1.6"
+  },
+  "packageManager": "pnpm@9.12.0"
+}
