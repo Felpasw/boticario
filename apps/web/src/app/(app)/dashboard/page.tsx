@@ -90,11 +90,7 @@ export default function DashboardPage() {
         <div>
           <SectionHeader>Heatmap · weekday × hora</SectionHeader>
           <div className="rounded-lg border border-border/50 bg-background p-4">
-            <WeekdayHourHeatmap
-              matrix={MOCK_HEATMAP}
-              weekdays={MOCK_WEEKDAYS}
-              hours={MOCK_HOURS}
-            />
+            <WeekdayHourHeatmap matrix={MOCK_HEATMAP} weekdays={MOCK_WEEKDAYS} hours={MOCK_HOURS} />
           </div>
         </div>
       </Section>

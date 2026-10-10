@@ -32,8 +32,7 @@ export function DwellDistributionChart({ buckets, className }: DwellDistribution
               />
             </div>
             <span className="w-20 text-right text-xs tabular-nums text-foreground">
-              {bucket.count}{' '}
-              <span className="text-muted-foreground">({pct.toFixed(0)}%)</span>
+              {bucket.count} <span className="text-muted-foreground">({pct.toFixed(0)}%)</span>
             </span>
           </div>
         );

@@ -8,13 +8,15 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  name      String
-  password  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  sessions  Session[]
+  id          String       @id @default(uuid())
+  email       String       @unique
+  name        String
+  password    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  sessions    Session[]
+  devices     Device[]
+  connections Connection[]
 }
 
 model Session {
@@ -26,4 +28,34 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model Device {
+  id          String       @id @default(uuid())
+  userId      String
+  macHash     String
+  firstSeenAt DateTime
+  lastSeenAt  DateTime
+  createdAt   DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connections Connection[]
+
+  @@unique([userId, macHash])
+  @@index([userId, lastSeenAt])
+}
+
+model Connection {
+  id              String    @id @default(uuid())
+  userId          String
+  deviceId        String
+  connectedAt     DateTime
+  disconnectedAt  DateTime?
+  durationSeconds Int?
+  idempotencyKey  String    @unique
+  createdAt       DateTime  @default(now())
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device          Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([userId, connectedAt])
+  @@index([deviceId, connectedAt])
 }

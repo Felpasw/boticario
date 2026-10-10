@@ -19,7 +19,12 @@ function intensity(value: number, max: number): string {
   return 'bg-zinc-900 dark:bg-zinc-100';
 }
 
-export function WeekdayHourHeatmap({ matrix, weekdays, hours, className }: WeekdayHourHeatmapProps) {
+export function WeekdayHourHeatmap({
+  matrix,
+  weekdays,
+  hours,
+  className,
+}: WeekdayHourHeatmapProps) {
   const max = Math.max(...matrix.flat());
   return (
     <div className={cn('w-full overflow-x-auto', className)}>

@@ -56,9 +56,7 @@ export function KpiCards({ cards, className }: KpiCardsProps) {
                 <span />
               )}
               {card.variation && Icon ? (
-                <span
-                  className={cn('flex items-center gap-0.5 text-xs font-semibold', colorClass)}
-                >
+                <span className={cn('flex items-center gap-0.5 text-xs font-semibold', colorClass)}>
                   <Icon className="size-3" aria-hidden="true" />
                   {Math.abs(card.variation.pct).toFixed(1)}%
                 </span>
