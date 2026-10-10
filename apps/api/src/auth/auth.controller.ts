@@ -7,7 +7,6 @@ import {
   Post,
   Req,
   Res,
-  UnauthorizedException,
   UsePipes,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
@@ -58,10 +57,7 @@ export class AuthController {
   }
 
   @Get('me')
-  me(@CurrentUser() user: AuthenticatedUser | undefined): LoginResponse {
-    if (!user) {
-      throw new UnauthorizedException('Session cookie is missing');
-    }
+  me(@CurrentUser() user: AuthenticatedUser): LoginResponse {
     return { user };
   }
 

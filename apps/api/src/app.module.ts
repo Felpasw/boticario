@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { AuthGuard } from './auth/infrastructure/guards/auth.guard.js';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './infrastructure/prisma/prisma.module.js';
+import { MetricsModule } from './metrics/metrics.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -16,6 +17,7 @@ import { UsersModule } from './users/users.module.js';
     UsersModule,
     AuthModule,
     HealthModule,
+    MetricsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

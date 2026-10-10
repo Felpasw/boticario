@@ -33,6 +33,7 @@
     "@prisma/client": "^6.1.0",
     "argon2": "^0.45.1",
     "cookie-parser": "^1.4.7",
+    "date-fns": "^4.4.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "shared": "workspace:*",
