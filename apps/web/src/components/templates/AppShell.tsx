@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { LogoutButton } from '@/components/atoms/LogoutButton';
+import { AnimatedThemeToggle } from '@/components/ui/animatedThemeToggle';
 
 interface AppShellProps {
   children: ReactNode;
@@ -18,7 +19,8 @@ export function AppShell({ children }: AppShellProps) {
           >
             Boticario
           </Link>
-          <nav className="flex items-center gap-3">
+          <nav className="flex items-center gap-2">
+            <AnimatedThemeToggle />
             <LogoutButton />
           </nav>
         </div>
