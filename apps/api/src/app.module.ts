@@ -5,6 +5,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AllExceptionsFilter } from './@common/infrastructure/filters/all-exceptions.filter.js';
 import { AuthModule } from './auth/auth.module.js';
 import { AuthGuard } from './auth/infrastructure/guards/auth.guard.js';
+import { ConnectionsModule } from './connections/connections.module.js';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './infrastructure/prisma/prisma.module.js';
 import { MetricsModule } from './metrics/metrics.module.js';
@@ -18,6 +19,7 @@ import { UsersModule } from './users/users.module.js';
     AuthModule,
     HealthModule,
     MetricsModule,
+    ConnectionsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

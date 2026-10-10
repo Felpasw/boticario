@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UsePipes } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import type {
   DwellDistributionResponse,
   HeatmapResponse,
@@ -30,27 +30,27 @@ export class MetricsController {
   ) {}
 
   @Get('summary')
-  @UsePipes(new ZodValidationPipe(MetricsQuerySchema))
   async summary(
-    @Query() query: MetricsQueryDto,
+    @Query(new ZodValidationPipe(MetricsQuerySchema))
+    query: MetricsQueryDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SummaryResponse> {
     return this.getSummary.execute({ user, from: query.from, to: query.to });
   }
 
   @Get('heatmap')
-  @UsePipes(new ZodValidationPipe(MetricsQuerySchema))
   async heatmap(
-    @Query() query: MetricsQueryDto,
+    @Query(new ZodValidationPipe(MetricsQuerySchema))
+    query: MetricsQueryDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<HeatmapResponse> {
     return this.getHeatmap.execute({ user, from: query.from, to: query.to });
   }
 
   @Get('timeseries')
-  @UsePipes(new ZodValidationPipe(MetricsQuerySchema))
   async timeseries(
-    @Query() query: MetricsQueryDto,
+    @Query(new ZodValidationPipe(MetricsQuerySchema))
+    query: MetricsQueryDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<TimeseriesResponse> {
     return this.getTimeseries.execute({
@@ -62,18 +62,18 @@ export class MetricsController {
   }
 
   @Get('dwell-distribution')
-  @UsePipes(new ZodValidationPipe(MetricsQuerySchema))
   async dwellDistribution(
-    @Query() query: MetricsQueryDto,
+    @Query(new ZodValidationPipe(MetricsQuerySchema))
+    query: MetricsQueryDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<DwellDistributionResponse> {
     return this.getDwellDistribution.execute({ user, from: query.from, to: query.to });
   }
 
   @Get('top-recurring')
-  @UsePipes(new ZodValidationPipe(TopRecurringQuerySchema))
   async topRecurring(
-    @Query() query: TopRecurringQueryDto,
+    @Query(new ZodValidationPipe(TopRecurringQuerySchema))
+    query: TopRecurringQueryDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<TopRecurringResponse> {
     return this.getTopRecurring.execute({

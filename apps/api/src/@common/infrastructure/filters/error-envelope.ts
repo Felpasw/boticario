@@ -36,6 +36,16 @@ export const DOMAIN_ERROR_MAP: Record<string, DomainErrorMapping> = {
     code: 'EMAIL_ALREADY_REGISTERED',
     message: 'email já cadastrado',
   },
+  DisconnectedBeforeConnectedError: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    code: 'DISCONNECTED_BEFORE_CONNECTED',
+    message: 'disconnectedAt must be greater than or equal to connectedAt',
+  },
+  InvalidMacAddressError: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    code: 'INVALID_MAC_ADDRESS',
+    message: 'invalid IEEE 802 MAC address',
+  },
 };
 
 export const HTTP_STATUS_CODES: Record<number, string> = {

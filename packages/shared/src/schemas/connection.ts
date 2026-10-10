@@ -39,6 +39,12 @@ export const ConnectionsQuerySchema = z.object({
 });
 export type ConnectionsQuery = z.infer<typeof ConnectionsQuerySchema>;
 
+export const RegisterConnectionResponseSchema = z.object({
+  created: z.boolean(),
+  connection: ConnectionViewSchema,
+});
+export type RegisterConnectionResponse = z.infer<typeof RegisterConnectionResponseSchema>;
+
 export const ConnectionsListResponseSchema = z.object({
   data: z.array(ConnectionViewSchema),
   page: z.number().int().positive(),
