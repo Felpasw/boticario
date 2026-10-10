@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Generate Prisma client
-        run: pnpm --filter api prisma generate
+        run: pnpm --filter api exec prisma generate
       - name: Build shared
         run: pnpm --filter shared build
       - name: Lint
@@ -42,7 +42,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Generate Prisma client
-        run: pnpm --filter api prisma generate
+        run: pnpm --filter api exec prisma generate
       - name: Build shared
         run: pnpm --filter shared build
       - name: Typecheck
@@ -78,7 +78,7 @@ jobs:
       - name: Build shared
         run: pnpm --filter shared build
       - name: Apply Prisma migrations
-        run: pnpm --filter api prisma migrate deploy
+        run: pnpm --filter api exec prisma migrate deploy
       - name: Unit tests
         run: pnpm test
       - name: E2E tests

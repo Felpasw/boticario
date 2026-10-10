@@ -25,13 +25,13 @@
 
 ## Fase 0 — Schema + shared
 
-- [ ] **BOT-22** [S] [T] — Prisma: models `User` + `Session`:
+- [x] **BOT-22** [S] [T] — ✅ commit `258cd62` — Prisma: models `User` + `Session`:
   - Edita `apps/api/prisma/schema.prisma` adicionando `User` e `Session` (ver `spec.md` §3)
   - `pnpm --filter api prisma migrate dev --name add_user_and_session`
   - Teste: cria smoke test de integração em `apps/api/test/users.integration-spec.ts` que `prisma.user.create` + `prisma.session.create` + queries básicas (via Testcontainers)
   - Validação: migration aplica sem erro; teste passa; `prisma generate` atualiza client
 
-- [ ] **BOT-23** [S] [T] — Shared: schemas Zod de auth:
+- [x] **BOT-23** [S] [T] — ✅ commit `fa02261` — Shared: schemas Zod de auth:
   - Cria `packages/shared/src/schemas/auth.ts`:
     - `LoginRequestSchema` = `z.object({ email: z.string().email(), password: z.string().min(1) })`
     - `AuthUserSchema` = `z.object({ id: z.string().uuid(), email: z.string().email(), name: z.string() })`
@@ -45,7 +45,7 @@
 
 ## Fase 1 — Backend: users + auth infra
 
-- [ ] **BOT-24** [S] [T] — Módulo `users/`:
+- [x] **BOT-24** [S] [T] — ✅ commit `93e6886` — Módulo `users/`:
   - `apps/api/src/users/`:
     - `domain/ports/users-repository.ts` — interface `IUsersRepository` com `findByEmail`, `findById`, `create`
     - `domain/errors/user-not-found.error.ts`, `email-already-registered.error.ts`
@@ -56,7 +56,7 @@
     - Unit: `prisma-users.repository.spec.ts` com Testcontainers (CRUD básico)
   - Validação: `pnpm --filter api test` passa; módulo importável de outros módulos
 
-- [ ] **BOT-25** [S] [T] — Password hasher + sessions repo + id generator:
+- [x] **BOT-25** [S] [T] — ✅ commit `012e7b0` — Password hasher + sessions repo + id generator:
   - `apps/api/src/auth/infrastructure/argon2-password-hasher.ts` — impl de `IPasswordHasher` (`hash(plain)`, `verify(plain, hash)`)
   - `apps/api/src/auth/domain/ports/password-hasher.ts` — interface
   - `apps/api/src/auth/domain/ports/sessions-repository.ts` — interface `ISessionsRepository` com `create`, `findActiveById`, `deleteById`, `renewExpiration`
@@ -68,7 +68,7 @@
     - Integration: `prisma-sessions.repository.spec.ts` com Testcontainers
   - Validação: todos os testes passam
 
-- [ ] **BOT-26** [S] [T] — Auth module com use-cases + controller:
+- [x] **BOT-26** [S] [T] — ✅ commit `b543435` (bundled with BOT-27) — Auth module com use-cases + controller:
   - `apps/api/src/auth/application/use-cases/login-with-password.use-case.ts`:
     - Recebe `{ email, password }`, resolve user via `IUsersRepository.findByEmail`
     - **Se não existe**: roda `argon2.verify(password, DUMMY_HASH)` pra timing constante → lança `InvalidCredentialsError`
@@ -89,7 +89,7 @@
     - E2E: `apps/api/test/auth.e2e-spec.ts` com Testcontainers (login 200 + cookie; login 401 com credential ruim; logout 204; `/auth/me` 200 autenticado / 401 sem cookie)
   - Validação: todos os testes passam; manual via `curl -c cookies.txt :3333/auth/login -d ...` funciona
 
-- [ ] **BOT-27** [S] [T] — Guard global + decorators + exception filter:
+- [x] **BOT-27** [S] [T] — ✅ commit `b543435` — Guard global + decorators + exception filter:
   - `apps/api/src/auth/infrastructure/guards/auth.guard.ts` — lê cookie, resolve session + user, renova se faltar < 24h, injeta `request.user`
   - `apps/api/src/auth/infrastructure/decorators/public.decorator.ts` — `export const Public = () => SetMetadata(IS_PUBLIC_KEY, true)`
   - `apps/api/src/auth/infrastructure/decorators/current-user.decorator.ts` — `createParamDecorator((_, ctx) => ctx.switchToHttp().getRequest().user)`
@@ -102,7 +102,7 @@
     - E2E: nova rota dummy protegida devolve 401 sem cookie
   - Validação: `pnpm --filter api test` + `test:e2e` passam
 
-- [ ] **BOT-28** [S] — Seed de admin:
+- [x] **BOT-28** [S] — ✅ commit `ed3d1b6` — Seed de admin:
   - `apps/api/prisma/seed.ts`:
     - Lê `SEED_ADMIN_EMAIL` + `SEED_ADMIN_PASSWORD` do env
     - `prisma.user.upsert({ where: { email }, create: { email, name: 'Admin', passwordHash: await argon2.hash(password) }, update: {} })`
@@ -115,7 +115,7 @@
 
 ## Fase 2 — Frontend
 
-- [ ] **BOT-29** [S] [T] — `userStore` + `authService` + `useAuth`:
+- [x] **BOT-29** [S] [T] — ✅ commit `3e11545` — `userStore` + `authService` + `useAuth`:
   - `apps/web/src/stores/userStore.ts`:
     - Zustand com `persist` middleware, nome `"boticario:user-store"`
     - State: `{ user: AuthUser | null }` (tipo importado do `shared`)
@@ -141,7 +141,7 @@
     - `useAuth.test.tsx` — renderiza hook via `renderHook` com `QueryClientProvider`, mock axios, dispara login + verifica store atualizado
   - Validação: `pnpm --filter web test` passa
 
-- [ ] **BOT-30** [S] [T] — `/login` page + `LoginForm` + `AuthTemplate`:
+- [x] **BOT-30** [S] [T] — ✅ commits `7be14a1` (ui primitives + animated atoms) + `cb7802c` (landing + login) — `/login` page + `LoginForm` + `AuthTemplate`:
   - `apps/web/src/components/templates/AuthTemplate.tsx` — layout centralizado com card
   - `apps/web/src/components/molecules/LoginForm.tsx`:
     - RHF + `zodResolver(LoginRequestSchema)` do shared
@@ -155,7 +155,7 @@
     - `LoginForm.test.tsx` — render + validação (email inválido mostra erro, submit vazio bloqueado, submit válido chama o service)
   - Validação: `pnpm --filter web dev`, browser em `/login`, submete admin + senha → navega pra `/`
 
-- [ ] **BOT-31** [S] [T] — `(app)/layout` protegido + `LogoutButton`:
+- [x] **BOT-31** [S] [T] — ✅ commit `4d947bd` — `(app)/layout` protegido + `LogoutButton`:
   - `apps/web/src/app/(app)/layout.tsx` — Server Component:
     - Lê cookie `boticario_session` via `cookies()` do `next/headers`
     - Se ausente → `redirect('/login')`
