@@ -3,6 +3,32 @@
 Guia prático pra subir o Wi-Fi Insights localmente. Se algum passo
 falhar, a seção de troubleshooting no fim cobre os erros mais comuns.
 
+## 🚀 Ambiente no ar
+
+Antes de subir local, o app já está rodando numa VPS pra inspeção
+direta:
+
+| O que                | Endereço                                                                 |
+| -------------------- | ------------------------------------------------------------------------ |
+| 🖥️ Dashboard (web)   | http://15.204.244.117:3000                                               |
+| 🔌 API               | http://15.204.244.117:3333                                               |
+| 📘 Swagger UI        | http://15.204.244.117:3333/docs                                          |
+| ❤️ Health            | http://15.204.244.117:3333/health                                        |
+
+**Login do dashboard**: `admin@boticario.local` / `change-me-dev`
+
+**API key de ingestão** (header `X-Ingest-Key`): `change-me-dev-ingest-key`
+
+```sh
+# exemplo de POST autenticado contra o deploy
+curl -X POST http://15.204.244.117:3333/connections \
+  -H "Content-Type: application/json" \
+  -H "X-Ingest-Key: change-me-dev-ingest-key" \
+  -d '{"macAddress":"AA:BB:CC:DD:EE:01","connectedAt":"2026-10-11T12:00:00.000Z","disconnectedAt":"2026-10-11T12:15:00.000Z"}'
+```
+
+---
+
 ---
 
 ## Pré-requisitos

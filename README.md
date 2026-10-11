@@ -4,6 +4,31 @@ Dashboard que dá ao dono de uma loja Boticário visibilidade sobre os visitante
 
 Este documento é o **product brief inicial**. Serve pra guiar a quebra do trabalho em fases (`specs/NNN-slug/`) e alinhar decisões antes de começar a codar.
 
+## 🚀 App no ar
+
+Deploy ativo rodando numa VPS, pronto pra avaliar sem precisar subir local:
+
+| O que                | Endereço                                                                 |
+| -------------------- | ------------------------------------------------------------------------ |
+| 🖥️ Dashboard (web)   | http://15.204.244.117:3000                                               |
+| 🔌 API               | http://15.204.244.117:3333                                               |
+| 📘 Swagger UI        | http://15.204.244.117:3333/docs                                          |
+| ❤️ Health            | http://15.204.244.117:3333/health                                        |
+
+**Credenciais pra login no dashboard**:
+
+- **Email**: `admin@boticario.local`
+- **Senha**: `change-me-dev`
+
+Pra testar o endpoint de ingestão autenticado via API key:
+
+```sh
+curl -X POST http://15.204.244.117:3333/connections \
+  -H "Content-Type: application/json" \
+  -H "X-Ingest-Key: change-me-dev-ingest-key" \
+  -d '{"macAddress":"AA:BB:CC:DD:EE:01","connectedAt":"2026-10-11T12:00:00.000Z","disconnectedAt":"2026-10-11T12:15:00.000Z"}'
+```
+
 > **📘 Docs complementares**:
 > - [`docs/rodando.md`](docs/rodando.md) — guia prático de setup e testes
 > - [`docs/decisions.md`](docs/decisions.md) — justificativas das escolhas arquiteturais
