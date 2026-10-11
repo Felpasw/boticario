@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/Felpasw/boticario/compare/web-v0.3.0...web-v0.4.0) (2026-10-11)
+
+
+### ✨ Features
+
+* Wi-Fi Insights MVP — ingest + metrics + dashboard + e2e [BOT-32] ([7feaf82](https://github.com/Felpasw/boticario/commit/7feaf826e98642f554ed28e3af1f6edf8c36a263))
+
+
+### 🐛 Correções
+
+* **web:** wrap dashboard in Suspense so Next 16 can prerender it ([eb6d14b](https://github.com/Felpasw/boticario/commit/eb6d14bdf87aa971761ef1f51fbf120684f0ace4))
+
 ## [0.3.0](https://github.com/Felpasw/boticario/compare/web-v0.2.0...web-v0.3.0) (2026-10-10)
 
 
