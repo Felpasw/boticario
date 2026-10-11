@@ -124,6 +124,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
       MAC_HASH_SECRET: ci-e2e-secret
+      INGEST_API_KEY: ci-e2e-ingest-key
+      INGEST_USER_EMAIL: admin@boticario.local
       SEED_ADMIN_EMAIL: admin@boticario.local
       SEED_ADMIN_PASSWORD: change-me-dev
       SEED_ADMIN_NAME: Admin
