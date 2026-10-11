@@ -9,6 +9,7 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import {
   ConnectionsQuerySchema,
@@ -34,6 +35,7 @@ export class ConnectionsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @Throttle({ default: { limit: 1000, ttl: 60_000 } })
   async register(
     @Body(new ZodValidationPipe(RegisterConnectionRequestSchema))
     dto: RegisterConnectionDto,
