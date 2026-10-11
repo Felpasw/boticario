@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
@@ -20,11 +21,13 @@ import {
 
 import { ZodValidationPipe } from '../@common/infrastructure/pipes/zod-validation.pipe.js';
 import { CurrentUser } from '../auth/infrastructure/decorators/current-user.decorator.js';
+import { Public } from '../auth/infrastructure/decorators/public.decorator.js';
 import type { AuthenticatedUser } from '../auth/infrastructure/types/authenticated-request.js';
 import { ListConnectionsUseCase } from './application/use-cases/list-connections.use-case.js';
 import { RegisterConnectionUseCase } from './application/use-cases/register-connection.use-case.js';
 import { ConnectionsQueryDto } from './dto/connections-query.dto.js';
 import { RegisterConnectionDto } from './dto/register-connection.dto.js';
+import { IngestKeyGuard } from './infrastructure/guards/ingest-key.guard.js';
 
 @Controller('connections')
 export class ConnectionsController {
@@ -33,6 +36,8 @@ export class ConnectionsController {
     private readonly listConnections: ListConnectionsUseCase,
   ) {}
 
+  @Public()
+  @UseGuards(IngestKeyGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @Throttle({ default: { limit: 1000, ttl: 60_000 } })
