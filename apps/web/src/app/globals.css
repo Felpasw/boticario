@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'react-day-picker/style.css';
 
 @variant dark (&:where(.dark, .dark *));
 
@@ -90,4 +91,45 @@ body {
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
+}
+
+/* react-day-picker: route every color through theme tokens so dark mode works. */
+.rdp-root {
+  --rdp-accent-color: hsl(var(--primary));
+  --rdp-accent-background-color: hsl(var(--accent));
+  --rdp-today-color: hsl(var(--primary));
+  --rdp-background-color: hsl(var(--accent));
+  --rdp-range_middle-background-color: hsl(var(--accent));
+  --rdp-range_middle-color: hsl(var(--accent-foreground));
+  --rdp-range_start-color: hsl(var(--primary-foreground));
+  --rdp-range_end-color: hsl(var(--primary-foreground));
+  --rdp-selected-border: 1px solid hsl(var(--primary));
+  --rdp-outline: 2px solid hsl(var(--ring));
+  --rdp-outline-selected: 2px solid hsl(var(--ring));
+  color: hsl(var(--popover-foreground));
+}
+
+.rdp-root .rdp-day_button:hover:not([disabled]) {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.rdp-root .rdp-selected .rdp-day_button {
+  color: hsl(var(--primary-foreground));
+  background-color: hsl(var(--primary));
+}
+
+.rdp-root .rdp-range_middle .rdp-day_button {
+  color: hsl(var(--accent-foreground));
+  background-color: transparent;
+}
+
+.rdp-root .rdp-weekday,
+.rdp-root .rdp-caption_label,
+.rdp-root .rdp-month_caption {
+  color: hsl(var(--muted-foreground));
+}
+
+.rdp-root .rdp-chevron {
+  fill: hsl(var(--foreground));
 }

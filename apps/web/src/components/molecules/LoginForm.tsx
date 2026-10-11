@@ -46,7 +46,7 @@ export function LoginForm() {
     <form
       onSubmit={onSubmit}
       noValidate
-      className="flex flex-col gap-10 rounded-2xl border border-zinc-200/70 bg-white/60 p-8 shadow-sm backdrop-blur-sm dark:border-zinc-800/70 dark:bg-zinc-950/60"
+      className="flex flex-col gap-10 p-8"
     >
       <div className="flex flex-col gap-8">
         <ControlledInput

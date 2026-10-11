@@ -1,24 +1,40 @@
 'use client';
 
 import { motion } from 'motion/react';
+import type { DwellDistributionResponse } from 'shared';
 
+import { Skeleton } from '@/components/atoms/Skeleton';
 import { cn } from '@/lib/utils';
 
-import type { DwellBucket } from './mock';
-
 interface DwellDistributionChartProps {
-  buckets: DwellBucket[];
+  distribution: DwellDistributionResponse | undefined;
   className?: string;
 }
 
-export function DwellDistributionChart({ buckets, className }: DwellDistributionChartProps) {
-  const total = buckets.reduce((sum, b) => sum + b.count, 0);
-  const max = Math.max(...buckets.map((b) => b.count));
+const SKELETON_BUCKETS = 5;
+
+export function DwellDistributionChart({ distribution, className }: DwellDistributionChartProps) {
+  if (!distribution) {
+    return (
+      <div className={cn('flex flex-col gap-3', className)}>
+        {Array.from({ length: SKELETON_BUCKETS }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-5 flex-1" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const { buckets, totalWithDwell } = distribution;
+  const max = buckets.reduce((acc, b) => (b.count > acc ? b.count : acc), 0);
 
   return (
     <div className={cn('flex flex-col gap-3', className)}>
       {buckets.map((bucket, i) => {
-        const pct = total === 0 ? 0 : (bucket.count / total) * 100;
+        const pct = totalWithDwell === 0 ? 0 : (bucket.count / totalWithDwell) * 100;
         const widthPct = max === 0 ? 0 : (bucket.count / max) * 100;
         return (
           <div key={bucket.label} className="flex items-center gap-3">
