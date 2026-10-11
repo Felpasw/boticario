@@ -1,24 +1,31 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { AllExceptionsFilter } from './@common/infrastructure/filters/all-exceptions.filter.js';
 import { AuthModule } from './auth/auth.module.js';
 import { AuthGuard } from './auth/infrastructure/guards/auth.guard.js';
+import { ConnectionsModule } from './connections/connections.module.js';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './infrastructure/prisma/prisma.module.js';
+import { MetricsModule } from './metrics/metrics.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, cache: true }),
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 100 }]),
     PrismaModule,
     UsersModule,
     AuthModule,
     HealthModule,
+    MetricsModule,
+    ConnectionsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
 })

@@ -7,9 +7,9 @@ import {
   Post,
   Req,
   Res,
-  UnauthorizedException,
   UsePipes,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { LoginRequestSchema, type LoginResponse } from 'shared';
 
@@ -32,6 +32,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UsePipes(new ZodValidationPipe(LoginRequestSchema))
   async login(
     @Body() dto: LoginDto,
@@ -58,10 +59,7 @@ export class AuthController {
   }
 
   @Get('me')
-  me(@CurrentUser() user: AuthenticatedUser | undefined): LoginResponse {
-    if (!user) {
-      throw new UnauthorizedException('Session cookie is missing');
-    }
+  me(@CurrentUser() user: AuthenticatedUser): LoginResponse {
     return { user };
   }
 
