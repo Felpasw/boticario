@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/Felpasw/boticario/compare/api-v0.3.0...api-v0.4.0) (2026-10-11)
+
+
+### ✨ Features
+
+* **api:** authenticate POST /connections by shared ingest key ([2c0d68a](https://github.com/Felpasw/boticario/commit/2c0d68a1d957172bd5d09faf862341a022b6afdb))
+* Wi-Fi Insights MVP — ingest + metrics + dashboard + e2e [BOT-32] ([7feaf82](https://github.com/Felpasw/boticario/commit/7feaf826e98642f554ed28e3af1f6edf8c36a263))
+
+
+### 🐛 Correções
+
+* **ci:** provide ingest env vars to the api test job ([5a5c9b4](https://github.com/Felpasw/boticario/commit/5a5c9b4d422bf0a87e9ffb6e546e582a852deb93))
+
 ## [0.3.0](https://github.com/Felpasw/boticario/compare/api-v0.2.0...api-v0.3.0) (2026-10-10)
 
 
