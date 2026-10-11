@@ -66,6 +66,9 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+      MAC_HASH_SECRET: ci-test-secret
+      INGEST_API_KEY: ci-test-ingest-key
+      INGEST_USER_EMAIL: admin@boticario.local
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

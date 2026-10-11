@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 
 describe('HealthController (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication<App> | undefined;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -20,10 +20,12 @@ describe('HealthController (e2e)', () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    await app?.close();
+    app = undefined;
   });
 
   it('GET /health returns 200 with db ok', async () => {
+    if (!app) throw new Error('app not initialized');
     const response = await request(app.getHttpServer()).get('/health').expect(200);
 
     const body = response.body as HealthResponse;
