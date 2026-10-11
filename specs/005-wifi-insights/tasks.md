@@ -28,14 +28,14 @@
 
 ## Fase 0 — Schema + shared
 
-- [ ] **BOT-32** [S] [T] — Prisma: `Device`, `Connection`:
+- [x] **BOT-32** [S] [T] — Prisma: `Device`, `Connection`: ✅ commit `5cadc52`
   - Adiciona models ao `apps/api/prisma/schema.prisma` (ver `spec.md` §3)
   - `User` ganha `devices: Device[]` e `connections: Connection[]` (relações inversas)
   - Migration: `pnpm --filter api prisma migrate dev --name add_devices_connections`
   - Teste: integração em `apps/api/test/wifi-models.integration-spec.ts` validando `prisma.device.upsert({ where: { userId_macHash } })` + `prisma.connection.create`
   - Validação: migration aplica; teste passa
 
-- [ ] **BOT-33** [S] [T] — Shared: schemas Zod:
+- [x] **BOT-33** [S] [T] — Shared: schemas Zod: ✅ commit `5cadc52`
   - `packages/shared/src/schemas/connection.ts`:
     - `MacAddressSchema` = regex IEEE 802
     - `RegisterConnectionRequestSchema` = `{ macAddress, connectedAt, disconnectedAt? }` com refine `disconnectedAt >= connectedAt`
@@ -63,7 +63,7 @@
 
 ## Fase 1 — Backend: ingestion + listing
 
-- [ ] **BOT-34** [S] [T] — Devices repo + MAC hasher + idempotency key builder:
+- [x] **BOT-34** [S] [T] — Devices repo + MAC hasher + idempotency key builder: ✅ commit `1b44147`
   - `apps/api/src/connections/domain/services/mac-hasher.ts`:
     - `hashMac(mac: string, secret: string): string` — HMAC-SHA256(mac.toLowerCase(), secret).hex
     - Pura, testada com fixture determinística
@@ -75,7 +75,7 @@
   - Testes: unit das 2 funções puras + integração do repo
   - Validação: todos passam
 
-- [ ] **BOT-35** [S] [T] — `POST /connections`:
+- [x] **BOT-35** [S] [T] — `POST /connections`: ✅ commit `1b44147`
   - `apps/api/src/connections/domain/ports/connections-repository.ts` — interface com `findByIdempotencyKey`, `create`
   - `apps/api/src/connections/infrastructure/repositories/prisma-connections.repository.ts`
   - `apps/api/src/connections/domain/errors/`:
@@ -97,7 +97,7 @@
     - E2E `connections.e2e-spec.ts`: POST autenticado 201; reenvio devolve 200 com mesmo id; 422 se disconnect < connect; 401 sem cookie
   - Validação: todos passam
 
-- [ ] **BOT-36** [S] [T] — `GET /connections` paginated:
+- [x] **BOT-36** [S] [T] — `GET /connections` paginated: ✅ commit `1b44147`
   - `apps/api/src/connections/application/use-cases/list-connections.use-case.ts`:
     - Lê `userId` + `{ from, to, page, perPage }` com defaults (últimos 30d, page=1, perPage=50)
     - Count total + fetch paginado
@@ -114,7 +114,7 @@
 
 ## Fase 2 — Backend: metrics
 
-- [ ] **BOT-37** [S] [T] — Funções puras + `TimezoneConfig`:
+- [x] **BOT-37** [S] [T] — Funções puras + `TimezoneConfig`: ✅ commit `2a4e1e8`
   - `apps/api/src/@common/config/timezone.config.ts`:
     - Classe injetável que lê `APP_TIMEZONE` do `ConfigService` com default `America/Sao_Paulo`
     - Expõe `get(): string`
@@ -136,7 +136,7 @@
     - `alerts-evaluator.spec.ts`: cada tipo de alert com fixture, ordenação, truncate em 3
   - Validação: todos passam
 
-- [ ] **BOT-38** [S] [T] — Repository de metrics (SQL raw):
+- [x] **BOT-38** [S] [T] — Repository de metrics (SQL raw): ✅ commit `2a4e1e8`
   - `apps/api/src/metrics/infrastructure/repositories/prisma-metrics.repository.ts` com 5 métodos:
     - `summaryFor({ userId, from, to, timezone })`: visits, uniqueVisitors, uniqueRecurring, dwellMedian, dwellAvg via `prisma.$queryRaw`
     - `heatmapFor({ userId, from, to, timezone })`: GROUP BY `EXTRACT(DOW ...) AT TIME ZONE timezone`
@@ -150,7 +150,7 @@
   - Testes de integração (Testcontainers) validando cada um dos 5 métodos com a fixture (incluindo invariante `new + recurring == uniqueVisitors` por bucket)
   - Validação: todos passam; teste de timezone não falha; cada método < 300ms
 
-- [ ] **BOT-39** [S] [T] — Metrics use-cases + endpoints:
+- [x] **BOT-39** [S] [T] — Metrics use-cases + endpoints: ✅ commit `2a4e1e8`
   - `apps/api/src/metrics/application/use-cases/get-summary.use-case.ts`:
     - Chama `periodResolver` → resolve `tz = timezoneConfig.get()` → `metricsRepo.summaryFor({ ..., timezone: tz })` + `summaryFor(prevPeriod)` + `heatmapFor(period)`
     - Monta `KpiBlockSchema` com variação
@@ -172,7 +172,7 @@
 
 ## Fase 3 — Backend: throttler, seed, swagger
 
-- [ ] **BOT-40** [S] [T] — Rate limit global + Swagger:
+- [x] **BOT-40** [S] [T] — Rate limit global + Swagger: ✅ commit `8d4fe24`
   - `pnpm --filter api add @nestjs/throttler`
   - `ThrottlerModule.forRoot` no `AppModule` com default 100 req/min
   - `APP_GUARD` com `ThrottlerGuard` (compõe com AuthGuard)
@@ -183,7 +183,7 @@
   - Testes: e2e verifica 429 após exceder limit no login
   - Validação: `/docs` lista 9 rotas (login, logout, me, POST/GET connections, 5 metrics)
 
-- [ ] **BOT-41** [S] — Seed de connections realistas:
+- [x] **BOT-41** [S] — Seed de connections realistas: ✅ commit `96d34b1`
   - `apps/api/prisma/seed/connections.ts`:
     - Pega admin seedado em `004` (`userId = admin.id`)
     - Gera ~8 semanas de connections com `faker.seed(42)` (determinístico):
@@ -201,7 +201,7 @@
 
 ## Fase 4 — Frontend: services, hooks
 
-- [ ] **BOT-42** [S] [T] — Services + hooks:
+- [x] **BOT-42** [S] [T] — Services + hooks: ✅ commit `e3685ac`
   - `apps/web/src/services/`:
     - `interfaces/connections.interface.ts` + `connections.service.ts` — classe com `register`, `list({ from, to, page, perPage })`
     - `interfaces/metrics.interface.ts` + `metrics.service.ts` — classe com `summary`, `heatmap`, `timeseries`, `dwellDistribution`, `topRecurring({ from, to, limit })`
@@ -221,7 +221,7 @@
 
 ## Fase 5 — Frontend: components
 
-- [ ] **BOT-43** [S] [T] — Atoms + molecules:
+- [x] **BOT-43** [S] [T] — Atoms + molecules: ✅ commit `e3685ac`
   - `apps/web/src/components/atoms/`:
     - `KpiValue.tsx` — formata número grande (abrev k/M quando couber)
     - `VariationBadge.tsx` — seta + % colorida por direção
@@ -240,7 +240,7 @@
   - Testes `.test.tsx` por componente — render + estados
   - Validação: `pnpm --filter web test` passa
 
-- [ ] **BOT-44** [S] [T] — Organisms:
+- [x] **BOT-44** [S] [T] — Organisms: ✅ commit `e3685ac`
   - `apps/web/src/components/organisms/`:
     - `SummarySection.tsx` — grid de 4 `KpiCard`, consome `useMetricsSummary().use(...)`, estados loading/empty/error
     - `HeatmapChart.tsx` — CSS Grid 7×24 com cores por intensidade (`#f1f5f9` → `#1e293b`), ARIA roles, consome `useMetricsHeatmap`
@@ -256,7 +256,7 @@
 
 ## Fase 6 — Frontend: pages
 
-- [ ] **BOT-45** [S] [T] — `/dashboard` page com SSR prefetch:
+- [x] **BOT-45** [S] [T] — `/dashboard` page com SSR prefetch: ✅ commit `e3685ac`
   - `apps/web/src/components/templates/DashboardTemplate.tsx` — layout com header (`DateRangePicker` + `PeriodShortcuts`) + content area em grid responsivo
   - `apps/web/src/app/(app)/dashboard/page.tsx` — Server Component:
     - Cria `queryClient` server-side
@@ -287,7 +287,7 @@
 
 ## Fase 7 — E2E Playwright + CI
 
-- [ ] **BOT-47** [S] [T] — Playwright setup + E2E dashboard/connections:
+- [x] **BOT-47** [S] [T] — Playwright setup + E2E dashboard/connections: ✅ commit `d28d840`
   - `pnpm --filter web add -D @playwright/test`
   - `apps/web/playwright.config.ts` com projects `chromium` + `webkit` (opcional)
   - `apps/web/e2e/dashboard.spec.ts`:
@@ -298,7 +298,7 @@
   - Scripts no `apps/web/package.json`: `"e2e": "playwright test"`, `"e2e:ui": "playwright test --ui"`
   - Validação: `pnpm --filter web e2e` passa local com docker-compose rodando
 
-- [ ] **BOT-48** [S] — CI: job `e2e` no `003`:
+- [x] **BOT-48** [S] — CI: job `e2e` no `003`: ✅ commit `a039c5f`
   - Atualiza `.github/workflows/ci.yml` adicionando job `e2e`:
     - `needs: [build]`
     - Service container Postgres (reusa config do `test`)
