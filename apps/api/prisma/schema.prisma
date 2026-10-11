@@ -34,9 +34,9 @@ model Device {
   id          String       @id @default(uuid())
   userId      String
   macHash     String
-  firstSeenAt DateTime
-  lastSeenAt  DateTime
-  createdAt   DateTime     @default(now())
+  firstSeenAt DateTime     @db.Timestamptz(3)
+  lastSeenAt  DateTime     @db.Timestamptz(3)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   connections Connection[]
 
@@ -48,11 +48,11 @@ model Connection {
   id              String    @id @default(uuid())
   userId          String
   deviceId        String
-  connectedAt     DateTime
-  disconnectedAt  DateTime?
+  connectedAt     DateTime  @db.Timestamptz(3)
+  disconnectedAt  DateTime? @db.Timestamptz(3)
   durationSeconds Int?
   idempotencyKey  String    @unique
-  createdAt       DateTime  @default(now())
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   device          Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
