@@ -1,4 +1,4 @@
-import type { CookieOptions } from 'express';
+import type { CookieOptions, Request } from 'express';
 
 export const SESSION_COOKIE_NAME = 'boticario_session';
 
@@ -14,4 +14,10 @@ export function getCookieOptions({ maxAgeMs }: CookieOptionsInput): CookieOption
     path: '/',
     maxAge: maxAgeMs,
   };
+}
+
+export function readSessionCookie(request: Request): string | undefined {
+  const cookies = (request as Request & { cookies?: Record<string, string> }).cookies;
+  const value: unknown = cookies?.[SESSION_COOKIE_NAME];
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
 }

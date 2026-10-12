@@ -28,7 +28,11 @@ import { LogoutUseCase } from './application/use-cases/logout.use-case.js';
 import { LoginDto } from './dto/login.dto.js';
 import { CurrentUser } from './infrastructure/decorators/current-user.decorator.js';
 import { Public } from './infrastructure/decorators/public.decorator.js';
-import { SESSION_COOKIE_NAME, getCookieOptions } from './infrastructure/session-cookie.js';
+import {
+  SESSION_COOKIE_NAME,
+  getCookieOptions,
+  readSessionCookie,
+} from './infrastructure/session-cookie.js';
 import { INVALID_CREDENTIALS_EXAMPLE, LOGIN_SUCCESS_EXAMPLE } from './swagger-examples.js';
 import type { AuthenticatedUser } from './infrastructure/types/authenticated-request.js';
 
@@ -85,7 +89,7 @@ export class AuthController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<void> {
-    const sessionId = this.readSessionCookie(request);
+    const sessionId = readSessionCookie(request);
     await this.logoutUseCase.execute(sessionId);
     response.clearCookie(SESSION_COOKIE_NAME, getCookieOptions({ maxAgeMs: 0 }));
   }
@@ -105,11 +109,5 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Session cookie missing, expired or revoked.' })
   me(@CurrentUser() user: AuthenticatedUser): LoginResponse {
     return { user };
-  }
-
-  private readSessionCookie(request: Request): string | undefined {
-    const cookies = (request as Request & { cookies?: Record<string, string> }).cookies;
-    const value: unknown = cookies?.[SESSION_COOKIE_NAME];
-    return typeof value === 'string' && value.length > 0 ? value : undefined;
   }
 }
