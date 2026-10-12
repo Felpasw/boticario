@@ -29,13 +29,8 @@ import { LoginDto } from './dto/login.dto.js';
 import { CurrentUser } from './infrastructure/decorators/current-user.decorator.js';
 import { Public } from './infrastructure/decorators/public.decorator.js';
 import { SESSION_COOKIE_NAME, getCookieOptions } from './infrastructure/session-cookie.js';
+import { INVALID_CREDENTIALS_EXAMPLE, LOGIN_SUCCESS_EXAMPLE } from './swagger-examples.js';
 import type { AuthenticatedUser } from './infrastructure/types/authenticated-request.js';
-
-const USER_EXAMPLE = {
-  id: '085bb29b-9af1-4d7b-9499-c40106ee9691',
-  email: 'admin@boticario.local',
-  name: 'Admin',
-};
 
 @ApiTags('auth')
 @Controller('auth')
@@ -59,19 +54,11 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Credentials accepted; session cookie attached to the response.',
-    schema: { example: { user: USER_EXAMPLE } },
+    schema: { example: LOGIN_SUCCESS_EXAMPLE },
   })
   @ApiUnauthorizedResponse({
     description: 'Invalid credentials.',
-    schema: {
-      example: {
-        statusCode: 401,
-        error: 'INVALID_CREDENTIALS',
-        message: 'email ou senha inválidos',
-        timestamp: '2026-10-12T10:00:00.000Z',
-        path: '/auth/login',
-      },
-    },
+    schema: { example: INVALID_CREDENTIALS_EXAMPLE },
   })
   @ApiTooManyRequestsResponse({ description: 'Rate limit reached (10 req/min per IP).' })
   async login(
@@ -113,7 +100,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Session is valid.',
-    schema: { example: { user: USER_EXAMPLE } },
+    schema: { example: LOGIN_SUCCESS_EXAMPLE },
   })
   @ApiUnauthorizedResponse({ description: 'Session cookie missing, expired or revoked.' })
   me(@CurrentUser() user: AuthenticatedUser): LoginResponse {

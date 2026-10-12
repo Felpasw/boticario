@@ -40,14 +40,12 @@ import { RegisterConnectionUseCase } from './application/use-cases/register-conn
 import { ConnectionsQueryDto } from './dto/connections-query.dto.js';
 import { RegisterConnectionDto } from './dto/register-connection.dto.js';
 import { IngestKeyGuard } from './infrastructure/guards/ingest-key.guard.js';
-
-const CONNECTION_EXAMPLE = {
-  id: '2829aa58-73e7-4cdd-8a17-17fe80ae98bc',
-  deviceId: 'c7006af8-cf05-4822-884b-816b2311554d',
-  connectedAt: '2026-10-11T12:00:00.000Z',
-  disconnectedAt: '2026-10-11T12:15:00.000Z',
-  durationSeconds: 900,
-};
+import {
+  CONNECTIONS_LIST_EXAMPLE,
+  DISCONNECTED_BEFORE_CONNECTED_EXAMPLE,
+  REGISTER_CREATED_EXAMPLE,
+  REGISTER_IDEMPOTENT_EXAMPLE,
+} from './swagger-examples.js';
 
 @ApiTags('connections')
 @Controller('connections')
@@ -83,25 +81,17 @@ export class ConnectionsController {
   @ApiBody({ type: RegisterConnectionDto })
   @ApiCreatedResponse({
     description: 'Connection registered for the first time.',
-    schema: { example: { created: true, connection: CONNECTION_EXAMPLE } },
+    schema: { example: REGISTER_CREATED_EXAMPLE },
   })
   @ApiOkResponse({
     description:
       'Idempotent replay — the connection with this key already exists; the original row is returned unchanged.',
-    schema: { example: { created: false, connection: CONNECTION_EXAMPLE } },
+    schema: { example: REGISTER_IDEMPOTENT_EXAMPLE },
   })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid X-Ingest-Key.' })
   @ApiUnprocessableEntityResponse({
     description: 'disconnectedAt < connectedAt or malformed MAC.',
-    schema: {
-      example: {
-        statusCode: 422,
-        error: 'DISCONNECTED_BEFORE_CONNECTED',
-        message: 'disconnectedAt must be greater than or equal to connectedAt',
-        timestamp: '2026-10-12T10:00:00.000Z',
-        path: '/connections',
-      },
-    },
+    schema: { example: DISCONNECTED_BEFORE_CONNECTED_EXAMPLE },
   })
   async register(
     @Body(new ZodValidationPipe(RegisterConnectionRequestSchema))
@@ -134,24 +124,7 @@ export class ConnectionsController {
   })
   @ApiOkResponse({
     description: 'Paginated list for the requested window.',
-    schema: {
-      example: {
-        data: [
-          CONNECTION_EXAMPLE,
-          {
-            id: 'eaf86090-a8f0-4634-89a7-24f72618e317',
-            deviceId: 'aa08dda4-e401-4433-ab90-2b9414d63231',
-            connectedAt: '2026-10-11T11:40:00.000Z',
-            disconnectedAt: null,
-            durationSeconds: null,
-          },
-        ],
-        page: 1,
-        perPage: 50,
-        total: 234,
-        totalPages: 5,
-      },
-    },
+    schema: { example: CONNECTIONS_LIST_EXAMPLE },
   })
   @ApiUnauthorizedResponse({ description: 'Session cookie missing, expired or revoked.' })
   async list(
