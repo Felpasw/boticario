@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.1](https://github.com/Felpasw/boticario/compare/api-v0.4.0...api-v0.4.1) (2026-10-12)
+
+
+### 🔨 Refactoring
+
+* **api:** extract auth use-case inputs into types/ files ([69a232d](https://github.com/Felpasw/boticario/commit/69a232d606c6fef1c5a08ad401c9d159c50d319f))
+* **api:** move readSessionCookie out of AuthController ([87fd0be](https://github.com/Felpasw/boticario/commit/87fd0be160c842e1694809f39dd37b2da5e2d82f))
+* **api:** move swagger examples out of controllers ([472a8b3](https://github.com/Felpasw/boticario/commit/472a8b3aa02db769c55550a44dbc2ae7baf8be35))
+
 ## [0.4.0](https://github.com/Felpasw/boticario/compare/api-v0.3.0...api-v0.4.0) (2026-10-11)
 
 
