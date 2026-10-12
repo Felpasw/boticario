@@ -24,9 +24,20 @@ async function bootstrap(): Promise<void> {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Boticario Wi-Fi Insights API')
-    .setDescription('Guest Wi-Fi analytics for a Boticario store.')
+    .setDescription(
+      [
+        'Guest Wi-Fi analytics for a Boticario store.',
+        '',
+        '- **Dashboard reads** (`/auth/me`, `/connections` GET, `/metrics/*`) use the',
+        '  `boticario_session` HttpOnly cookie. Hit `/auth/login` first to populate it.',
+        '- **Ingest** (`/connections` POST) uses the `X-Ingest-Key` header (shared secret),',
+        '  not the cookie — the emitter in production is an in-store router.',
+        '- Every window param (`from`, `to`) is ISO 8601 UTC; defaults to the last 30 days.',
+      ].join('\n'),
+    )
     .setVersion(packageVersion)
     .addCookieAuth('boticario_session', { type: 'apiKey', in: 'cookie', name: 'boticario_session' })
+    .addApiKey({ type: 'apiKey', in: 'header', name: 'X-Ingest-Key' }, 'X-Ingest-Key')
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, document, {

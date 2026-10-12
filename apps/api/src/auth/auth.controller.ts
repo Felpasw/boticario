@@ -9,6 +9,15 @@ import {
   Res,
   UsePipes,
 } from '@nestjs/common';
+import {
+  ApiBody,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiTooManyRequestsResponse,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { LoginRequestSchema, type LoginResponse } from 'shared';
@@ -22,6 +31,13 @@ import { Public } from './infrastructure/decorators/public.decorator.js';
 import { SESSION_COOKIE_NAME, getCookieOptions } from './infrastructure/session-cookie.js';
 import type { AuthenticatedUser } from './infrastructure/types/authenticated-request.js';
 
+const USER_EXAMPLE = {
+  id: '085bb29b-9af1-4d7b-9499-c40106ee9691',
+  email: 'admin@boticario.local',
+  name: 'Admin',
+};
+
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -34,6 +50,30 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UsePipes(new ZodValidationPipe(LoginRequestSchema))
+  @ApiOperation({
+    summary: 'Authenticate with email and password',
+    description:
+      'Creates a session row in Postgres and sets the boticario_session HttpOnly cookie. Rate-limited at 10 req/min per IP to deter brute-force.',
+  })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Credentials accepted; session cookie attached to the response.',
+    schema: { example: { user: USER_EXAMPLE } },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid credentials.',
+    schema: {
+      example: {
+        statusCode: 401,
+        error: 'INVALID_CREDENTIALS',
+        message: 'email ou senha inválidos',
+        timestamp: '2026-10-12T10:00:00.000Z',
+        path: '/auth/login',
+      },
+    },
+  })
+  @ApiTooManyRequestsResponse({ description: 'Rate limit reached (10 req/min per IP).' })
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) response: Response,
@@ -49,6 +89,11 @@ export class AuthController {
   @Public()
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Invalidate the current session',
+    description: 'Deletes the session row from Postgres and clears the boticario_session cookie.',
+  })
+  @ApiResponse({ status: 204, description: 'Session invalidated.' })
   async logout(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
@@ -59,6 +104,18 @@ export class AuthController {
   }
 
   @Get('me')
+  @ApiCookieAuth('boticario_session')
+  @ApiOperation({
+    summary: 'Resolve the user owning the current session',
+    description:
+      'Reads the boticario_session cookie and returns the owner of the session. Used by the dashboard to decide whether to redirect to /login.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Session is valid.',
+    schema: { example: { user: USER_EXAMPLE } },
+  })
+  @ApiUnauthorizedResponse({ description: 'Session cookie missing, expired or revoked.' })
   me(@CurrentUser() user: AuthenticatedUser): LoginResponse {
     return { user };
   }
