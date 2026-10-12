@@ -11,21 +11,14 @@ import {
   type SessionsRepository,
 } from '../../domain/ports/sessions-repository.js';
 import { generateSessionId } from '../../domain/services/session-id-generator.js';
+import type {
+  LoginWithPasswordInput,
+  LoginWithPasswordResult,
+} from './types/login-with-password.input.js';
 
 const DUMMY_HASH =
   '$argon2id$v=19$m=65536,t=3,p=4$ZHVtbXl2YWx1ZXp6enp6enp6eg$Mn4LfBe/kRz9j7Lx9W5pBvQnG9NmTD7Yvm3fF5XbRe4';
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
-
-export interface LoginWithPasswordInput {
-  email: string;
-  password: string;
-}
-
-export interface LoginWithPasswordResult {
-  user: { id: string; email: string; name: string };
-  sessionId: string;
-  expiresAt: Date;
-}
 
 @Injectable()
 export class LoginWithPasswordUseCase {

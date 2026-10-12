@@ -4,12 +4,13 @@ import {
   SESSIONS_REPOSITORY,
   type SessionsRepository,
 } from '../../domain/ports/sessions-repository.js';
+import type { LogoutInput } from './types/logout.input.js';
 
 @Injectable()
 export class LogoutUseCase {
   constructor(@Inject(SESSIONS_REPOSITORY) private readonly sessions: SessionsRepository) {}
 
-  async execute(sessionId: string | undefined): Promise<void> {
+  async execute(sessionId: LogoutInput): Promise<void> {
     if (!sessionId) {
       return;
     }
